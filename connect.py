@@ -16,7 +16,7 @@ class Connect:
             pass_required = True
         arg_parser = argparse.ArgumentParser(description='Web interface for Spotify Connect', parents=[audio_arg_parser])
         arg_parser.add_argument('--debug', '-d', help='enable libspotify_embedded/flask debug output', action="store_true")
-        arg_parser.add_argument('--key', '-k', help='path to spotify_appkey.key', default=os.path.dirname(os.path.join(os.path.realpath(__file__)),'/spotify_appkey.key'), type=file)
+        arg_parser.add_argument('--key', '-k', help='path to spotify_appkey.key', default=os.path.join(os.path.dirname(os.path.realpath(__file__)),'/spotify_appkey.key'), type=file)
         arg_parser.add_argument('--username', '-u', help='your spotify username', required=pass_required)
         arg_parser.add_argument('--password', '-p', help='your spotify password', required=pass_required)
         arg_parser.add_argument('--name', '-n', help='name that shows up in the spotify client', default='TestConnect')
