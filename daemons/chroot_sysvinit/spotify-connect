@@ -1,0 +1,67 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          Spotify-Connect
+# Required-Start:    $local_fs $network $named $time $syslog
+# Required-Stop:     $local_fs $network $named $time $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Spotify-connect
+# Description:       Spotify connect
+### END INIT INFO
+
+# Change the next 3 lines to suit where you install your script and what you want to call it
+DIR=/home/pi/spotify-connect-web-chroot
+DAEMON_DIR=/usr/src/scplayer
+DAEMON=/usr/src/scplayer/main.py
+DAEMON_NAME=spotify-connect
+SC_NAME=Boulebar
+
+# This next line determines what user the script runs as.
+# Root generally not recommended but necessary if you are using the Raspberry Pi GPIO from Python.
+DAEMON_USER=root
+
+# The process ID of the script when it runs is stored here:
+PIDFILE=/var/run/$DAEMON_NAME.pid
+
+. /lib/lsb/init-functions
+
+do_start () {
+    mount --bind /dev $DIR/dev
+    mount -t proc proc $DIR/proc/
+    cp /etc/resolv.conf $DIR/etc/
+    log_daemon_msg "Starting Spotify Connect"
+    start-stop-daemon --start --background --name $DAEMON_NAME --chroot $DIR --chdir $DAEMON_DIR --chuid $DAEMON_USER --pidfile $PIDFILE --make-pidfile --startas /bin/bash -- -c "exec $DAEMON -n $SC_NAME -b 320 -D default:CARD=PSC805" 
+    log_end_msg $?
+}
+do_stop () {
+    log_daemon_msg "Stopping system $DAEMON_NAME daemon"
+    start-stop-daemon --stop --pidfile $PIDFILE --retry 10
+    trap "umount $DIR/dev $DIR/proc" EXIT
+    rm -f "$PIDFILE"
+    rm -f "$DIR$PIDFILE"
+    log_end_msg $?
+}
+
+case "$1" in
+
+    start|stop)
+        do_${1}
+        ;;
+
+    restart|reload|force-reload)
+        do_stop
+        do_start
+        ;;
+
+    status)
+        status_of_proc "$DAEMON_NAME" "$DAEMON" && exit 0 || exit $?
+        ;;
+
+    *)
+        echo "Usage: /etc/init.d/$DAEMON_NAME {start|stop|restart|status}"
+        exit 1
+        ;;
+
+esac
+exit 0

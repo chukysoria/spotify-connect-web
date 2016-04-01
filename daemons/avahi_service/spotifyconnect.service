@@ -1,0 +1,11 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+ <name replace-wildcards="yes">Spotify-connect at %h</name>
+ <service>
+   <type>_spotify-connect._tcp</type>
+   <port>4000</port>
+   <txt-record>VERSION=1.0</txt-record>
+   <txt-record>CPath=/login/_zeroconf</txt-record>
+ </service>
+</service-group>

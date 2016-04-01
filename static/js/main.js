@@ -37,7 +37,7 @@ function playbackControl(e) {
         $('[data-action=repeat]').toggleClass('active');
     } else if (action === 'volume') {
         ajaxSettings.method = 'POST';
-        ajaxSettings.data = {value: Math.round(e.currentTarget.value * 655.35)}
+        ajaxSettings.data = {value: Math.round(e.currentTarget.value)}
     }
     $.ajax(ajaxSettings).fail(function(jqXHR, textStatus, error) {
         console.log("Request failed: " + error);
@@ -88,9 +88,9 @@ function updateMetadata() {
         album.attr('data-id', metadata.album_uri);
         album.text(metadata.album_name);
 
-        albumCover.attr('src', '/api/info/image_url/' + metadata.cover_uri)
+        albumCover.attr('src', metadata.cover_url_small)
 
-        volumeSlider.slider('setValue', metadata.volume / 655.35);
+        volumeSlider.slider('setValue', metadata.volume);
     }).fail(function(jqXHR, textStatus, error) {
         console.log("Request failed: " + error);
     });
