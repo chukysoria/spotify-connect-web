@@ -3,24 +3,45 @@
 This is based on the implementation of Fornoth from https://github.com/Fornoth/spotify-connect-web modified so it uses the [pyspotify-connect](https://github.com/chukysoria/pyspotify-connect) wrapper.
 
 ## Installation
-Copy `libspotify_embedded_shared.so` to `\usr\lib`.
-Run `pip install -r requirements.txt`.
 
-### Pyalsaaudio
-Can either be installed via `pip` (requires the ALSA headers (`libasound2-dev` package on Debian/Ubuntu)) or the `python-alsaaudio` package on Debian/Ubuntu.
+Follow this instructions for Debian:
+	
+	sudo apt-get update
+	sudo apt-get install git build-essential  
+	sudo apt-get install libasound2-dev python-dev python-gevent
+	git checkout https://github.com/chukysoria/spotify-connect-web.git
+	cd spotify-connect-web
 
+For armv6-armel systems:
+	
+	wget https://github.com/sashahilton00/spotify-connect-resources/blob/master/libs/armel/armv6/release-esdk-1.18.0-v1.18.0-g121b4b2b/libspotify_embedded_shared.so
+
+For armv7-armhf systems (Raspeberry Pi 2):
+
+	wget https://github.com/sashahilton00/spotify-connect-resources/blob/master/libs/armhf/armv7/release-esdk-1.20.0-v1.20.0-g594175d4/libspotify_embedded_shared.so
+
+Finally:
+	
+	sudo mv libspotify_embedded_shared.so /usr/lib
+	pip install -r requirements.txt
+	
 ## Usage
-Tested against the rocki `libspotify_embedded_shared.so`
-```
-usage: main.py [-h] [--debug] [--key KEY] [--username USERNAME]
+
+usage: main.py [-h] [--cors CORS] [--debug] [--key KEY] [--username USERNAME]
                [--password PASSWORD] [--name NAME] [--bitrate {90,160,320}]
-               [--credentials CREDENTIALS] [--device DEVICE] [--mixer MIXER]
-               [--volmin {0-99}] [--volmax {1-100}]
+               [--credentials CREDENTIALS] [--audiosink {alsa,snapcast}]
+               [--device DEVICE] [--mixer MIXER] [--volmin {0-99}]
+               [--volmax {1-100}]
+
 
 Web interface for Spotify Connect
 
 optional arguments:
   -h, --help            show this help message and exit
+  --cors CORS           enable CORS support for this host (for the web api).
+                        Must be in the format <protocol>://<hostname>:<port>.
+                        Port can be excluded if its 80 (http) or 443 (https).
+                        Can be specified multiple times  
   --debug, -d           enable libspotify_embedded/flask debug output
   --key KEY, -k KEY     path to spotify_appkey.key
   --username USERNAME, -u USERNAME
@@ -33,6 +54,8 @@ optional arguments:
                         work)
   --credentials CREDENTIALS, -c CREDENTIALS
                         File to load and save credentials from/to
+  --audiosink {alsa,snapcast}, -a {alsa,snapcast}
+                        output audio to alsa device or to Snapcast
   --device DEVICE, -D DEVICE
                         alsa output device
   --mixer MIXER, -m MIXER
@@ -48,7 +71,7 @@ The program requires a spotify premium account, and the `spotify_appkey.key` (th
 
 ###Device parameter
 
-The alsa output device name should be as returned by the `pyalsaaudio` command `pcms`. In order to check the possible valid options please execute:
+The alsa output device name should be as returned by the `pyalsaaudio` command `pcms`. In order to check the possible valid options please execute on a Python console:
 
     import alsaaudio
     alsaaudio.pcms()
@@ -56,7 +79,7 @@ The alsa output device name should be as returned by the `pyalsaaudio` command `
 
 ### Launching
 - Running with debug output `python main.py -d`
-- Can also be run without the web server (Requires username and password to be passed in as parameters or enable zeroconf)  `python connect_console.py`
+- Can also be run without the web server (Requires username and password to be passed in as parameters or enable avahi-zeroconf)  `python connect_console.py`
 
 ### Headers
 Generated with `cpp spotify.h > spotify.processed.h && sed -i 's/__extension__//g' spotify.processed.h`
@@ -70,7 +93,7 @@ There's a login button on the webpage to enter a username and password, or zeroc
 
 If you want to execute the above command as a service do the following:
 
-	cp ./daemons/avahi_service/spotifyconnect.service to /etc/avahi/services/spotifyconnect.service
+	cp ./daemons/avahi_service/spotifyconnect.service /etc/avahi/services/spotifyconnect.service
 
 It will start to be working as soon the file is copied, there's no need to restart.
 
@@ -79,7 +102,7 @@ After logging in successfully, a blob is sent by Spotify and saved to disk (to `
 ### Daemons
 If you want to always run on startup follow this steps (for Raspeberry 1 with armel on chroot):
 	
-	cp ./daemons/chroot_sysvinit/spotify-connect /etc/init.d/spotify-connect
-	chmod +x /etc/init.d/spotify-connect
-	update-rc.d spotify-connect defaults	
+	sudo cp ./daemons/chroot_sysvinit/spotify-connect /etc/init.d/spotify-connect
+	sudo chmod +x /etc/init.d/spotify-connect
+	sudo update-rc.d spotify-connect defaults	
 
