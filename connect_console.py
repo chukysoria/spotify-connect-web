@@ -8,7 +8,6 @@ import sys
 from time import sleep
 import uuid
 
-import alsa_sink
 import spotifyconnect
 from flask.testsuite import catch_stderr
 from spotifyconnect.error import LibError
@@ -28,6 +27,7 @@ class Connect:
         arg_parser.add_argument('--name', '-n', help='name that shows up in the spotify client', default='TestConnect')
         arg_parser.add_argument('--bitrate', '-b', help='Sets bitrate of alsa_sink stream (may not actually work)', choices=[90, 160, 320], type=int, default=160)
         arg_parser.add_argument('--credentials', '-c', help='File to load and save credentials from/to', default='credentials.json')
+        arg_parser.add_argument('--audiosink', '-a', help='output audio to alsa device or to Snapcast', choices=['alsa', 'snapcast'], default='alsa')
         arg_parser.add_argument('--device', '-D', help='alsa output device', default='default')
         arg_parser.add_argument('--mixer', '-m', help='alsa mixer name for volume control', default='')
         arg_parser.add_argument('--volmin', '-v', help='minimum mixer volume (percentage)', metavar='{0-99}', choices=xrange(0, 100), type=int, default=0)
@@ -80,7 +80,13 @@ class Connect:
         self.session.player.on(spotifyconnect.PlayerEvent.PLAYBACK_NOTIFY, self.playback_notify)
         self.session.player.on(spotifyconnect.PlayerEvent.PLAYBACK_SEEK, self.playback_seek)
 
-        self.audio_player = alsa_sink.AlsaSink(self.args.device)
+        if self.args.audiosink == 'alsa':
+            import alsa_sink
+            self.audio_player = alsa_sink.AlsaSink()
+        elif self.args.audiosink == 'snapcast':
+            import snapcast_sink
+            self.audio_player = snapcast_sink.SnapcastSink()
+            
         self.audio_player.mixer_load()
         self.session.player.on(spotifyconnect.PlayerEvent.PLAYBACK_VOLUME, self.volume_set)
 
