@@ -10,7 +10,7 @@ import os
 import re
 from time import sleep
 
-from connect_console import Connect
+from sc_console import Connect
 
 from flask import (Flask, flash, jsonify, redirect,
                    render_template, request, url_for)

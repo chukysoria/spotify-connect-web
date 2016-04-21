@@ -12,6 +12,10 @@ import player_exceptions
 
 import spotifyconnect
 
+__all__=[
+    Connect
+]
+
 
 class Connect:
 
