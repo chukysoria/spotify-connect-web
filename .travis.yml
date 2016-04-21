@@ -17,7 +17,7 @@ install: true
 
 script:
 - docker run -v $TRAVIS_BUILD_DIR:/usr/src/app -e TOX_ENV=$TOX_ENV
-  chukysoria/spotify-connect-web -c 'py.test --cov=sc_console'
+  chukysoria/spotify-connect-web -c 'py.test'
 
 after_success:
 - docker run -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH
