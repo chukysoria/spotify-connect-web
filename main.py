@@ -1,22 +1,31 @@
 #!/usr/bin/env python
 
-# First run the command avahi-publish-service TestConnect _spotify-connect._tcp 4000 VERSION=1.0 CPath=/login/_zeroconf
+# First run the command
+# avahi-publish-service TestConnect _spotify-connect._tcp 4000
+# VERSION=1.0 CPath=/login/_zeroconf
+#
 # TODO: Add error checking
-import os
 import argparse
+import os
 import re
-
-from flask import Flask, request, abort, jsonify, render_template, redirect, flash, url_for
+from time import sleep
 
 from connect_console import Connect
-from flask_bootstrap import Bootstrap
+
+from flask import (Flask, flash, jsonify, redirect,
+                   render_template, request, url_for)
 from flask.ext.cors import CORS
+
+from flask_bootstrap import Bootstrap
+
 from gevent.wsgi import WSGIServer
+
 import spotifyconnect
+
 
 web_arg_parser = argparse.ArgumentParser(add_help=False)
 
-#Not a tuple, evaluates the same as "" + ""
+# Not a tuple, evaluates the same as "" + ""
 cors_help = (
     "enable CORS support for this host (for the web api). "
     "Must be in the format <protocol>://<hostname>:<port>. "
@@ -24,19 +33,24 @@ cors_help = (
     "Can be specified multiple times"
 )
 
+
 def validate_cors_host(host):
-    host_regex = re.compile(r'^(http|https)://[a-zA-Z0-9][a-zA-Z0-9-.]+(:[0-9]{1,5})?$')
+    host_regex = re.compile(
+        r'^(http|https)://[a-zA-Z0-9][a-zA-Z0-9-.]+(:[0-9]{1,5})?$')
     result = re.match(host_regex, host)
     if result is None:
-         raise argparse.ArgumentTypeError('%s is not in the format <protocol>://<hostname>:<port>. Protocol must be http or https' % host)
+        raise argparse.ArgumentTypeError(
+            '%s is not in the format <protocol>://<hostname>:<port>. \
+            Protocol must be http or https' % host)
     return host
 
-web_arg_parser.add_argument('--cors', help=cors_help, action='append', type=validate_cors_host)
+web_arg_parser.add_argument(
+    '--cors', help=cors_help, action='append', type=validate_cors_host)
 args = web_arg_parser.parse_known_args()[0]
 
 app = Flask(__name__)
 Bootstrap(app)
-#Add CORS headers to API requests for specified hosts
+# Add CORS headers to API requests for specified hosts
 CORS(app, resources={r"/api/*": {"origins": args.cors}})
 
 # Serve bootstrap files locally instead of from a CDN
@@ -48,12 +62,14 @@ invalid_login = False
 
 connect_app = Connect(web_arg_parser)
 
+
 def error_notification(error_type, session):
     global invalid_login
     if error_type == spotifyconnect.ErrorType.LoginBadCredentials:
         invalid_login = True
 
-connect_app.session.connection.on(spotifyconnect.ConnectionEvent.ERROR_NOTIFICATION, error_notification)
+connect_app.session.connection.on(
+    spotifyconnect.ConnectionEvent.ERROR_NOTIFICATION, error_notification)
 
 if os.environ.get('DEBUG') or connect_app.args.debug:
     app.debug = True
@@ -61,6 +77,8 @@ if os.environ.get('DEBUG') or connect_app.args.debug:
 # #Routes
 
 # Home page
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -68,44 +86,54 @@ def index():
 # #API routes
 
 # Playback routes
+
+
 @app.route('/api/playback/play')
 def playback_play():
     connect_app.session.player.play()
     return '', 204
+
 
 @app.route('/api/playback/pause')
 def playback_pause():
     connect_app.session.player.pause()
     return '', 204
 
+
 @app.route('/api/playback/prev')
 def playback_prev():
     connect_app.session.player.skip_to_prev()
     return '', 204
+
 
 @app.route('/api/playback/next')
 def playback_next():
     connect_app.session.player.skip_to_next()
     return '', 204
 
+
 @app.route('/api/playback/shuffle')
 def playback_shuffle():
     connect_app.session.player.enable_shuffle()
     return '', 204
+
 
 @app.route('/api/playback/repeat')
 def playback_repeat():
     connect_app.session.player.enable_repeat()
     return '', 204
 
+
 @app.route('/api/playback/volume', methods=['GET'])
-def playback_volume():
+def playback_volume_get():
     return jsonify({
         'volume': connect_app.session.player.volume
     })
 
-@app.route('/api/playback/volume', methods=['POST'], endpoint='playback_volume-post')
-def playback_volume():
+
+@app.route('/api/playback/volume',
+           methods=['POST'], endpoint='playback_volume-post')
+def playback_volume_set():
     volume = request.form.get('value')
     if volume is None:
         return jsonify({
@@ -115,13 +143,17 @@ def playback_volume():
     return '', 204
 
 # Info routes
+
+
 @app.route('/api/info/metadata')
 def info_metadata():
     track = connect_app.session.player.current_track
     res = track.__dict__
     res['volume'] = connect_app.session.player.volume
-    res['cover_url_small'] = track.get_image_url(spotifyconnect.ImageSize.Normal)
+    res['cover_url_small'] = track.get_image_url(
+        spotifyconnect.ImageSize.Normal)
     return jsonify(res)
+
 
 @app.route('/api/info/status')
 def info_status():
@@ -133,14 +165,17 @@ def info_status():
         'logged_in': bool(connect_app.session.connection.connection_state)
     })
 
+
 @app.route('/api/info/display_name', methods=['GET'])
-def info_display_name():
+def info_display_name_get():
     return jsonify({
         'remoteName': get_zeroconf_vars()['remote_name']
     })
 
-@app.route('/api/info/display_name', methods=['POST'], endpoint='display_name-post')
-def info_display_name():
+
+@app.route('/api/info/display_name',
+           methods=['POST'], endpoint='display_name-post')
+def info_display_name_set():
     display_name = str(request.form.get('displayName'))
     if not display_name:
         return jsonify({
@@ -150,10 +185,13 @@ def info_display_name():
     return '', 204
 
 # Login routes
+
+
 @app.route('/login/logout')
 def login_logout():
     connec_app.session.connection.logout()
     return redirect(url_for('index'))
+
 
 @app.route('/login/password', methods=['POST'])
 def login_password():
@@ -171,6 +209,7 @@ def login_password():
 
     return redirect(url_for('index'))
 
+
 @app.route('/login/check_login')
 def check_login():
     res = {
@@ -185,6 +224,7 @@ def check_login():
         res['success'] = True
 
     return jsonify(res)
+
 
 @app.route('/login/_zeroconf', methods=['GET', 'POST'])
 def login_zeroconf():
@@ -204,6 +244,7 @@ def login_zeroconf():
             'spotifyError': 0,
             'statusString': 'ERROR-INVALID-ACTION'})
 
+
 def get_info():
     zeroconf_vars = connect_app.session.get_zeroconf_vars()
 
@@ -218,10 +259,13 @@ def get_info():
         'version': '2.0.1',
         'deviceType': zeroconf_vars.device_type,
         'modelDisplayName': connect_app.config.model_name,
-        # Status codes are ERROR-OK (not actually an error), ERROR-MISSING-ACTION, ERROR-INVALID-ACTION, ERROR-SPOTIFY-ERROR, ERROR-INVALID-ARGUMENTS, ERROR-UNKNOWN, and ERROR_LOG_FILE
+        # Status codes are ERROR-OK (not actually an error),
+        # ERROR-MISSING-ACTION, ERROR-INVALID-ACTION, ERROR-SPOTIFY-ERROR,
+        # ERROR-INVALID-ARGUMENTS, ERROR-UNKNOWN, and ERROR_LOG_FILE
         'statusString': 'ERROR-OK',
         'remoteName': zeroconf_vars.remote_name,
     })
+
 
 def add_user():
     args = request.form
@@ -236,13 +280,13 @@ def add_user():
         'status': 101,
         'spotifyError': 0,
         'statusString': 'ERROR-OK'
-        })
-
+    })
 
 
 # Only run if script is run directly and not by an import
 if __name__ == "__main__":
-# Can be run on any port as long as it matches the one used in avahi-publish-service
+    # Can be run on any port as long as it matches the one used in
+    # avahi-publish-service
     http_server = WSGIServer(('', 4000), app)
     http_server.serve_forever()
 

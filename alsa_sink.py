@@ -1,8 +1,11 @@
 import Queue
 import re
-from threading import Thread, Event
+from threading import Event, Thread
 
 import alsaaudio as alsa
+
+from player_exceptions import BufferFull, PlayerError
+
 from spotifyconnect import Sink
 
 
@@ -14,10 +17,11 @@ MAXPERIODS = int(0.5 * RATE / PERIODSIZE)  # 0.5s Buffer
 
 pending_data = str()
 
+
 class AlsaSink(Sink):
 
-
-    def __init__(self, device, rate=RATE, channels=CHANNELS, periodsize=PERIODSIZE, buffer_length=MAXPERIODS):
+    def __init__(self, device, rate=RATE, channels=CHANNELS,
+                 periodsize=PERIODSIZE, buffer_length=MAXPERIODS):
         self.device = None
         self.device_name = device
         self.rate = rate
@@ -32,8 +36,8 @@ class AlsaSink(Sink):
 
         self.on()
 
-
-    def _on_music_delivery(self, audio_format, samples, num_samples, pending, session):
+    def _on_music_delivery(self, audio_format, samples,
+                           num_samples, pending, session):
         global pending_data
 
         buf = pending_data + samples
@@ -130,7 +134,8 @@ class AlsaSink(Sink):
 
     def play(self):
         self.t_stop = Event()
-        self.t = Thread(args=(self.queue, self.t_stop), target=self.playback_thread)
+        self.t = Thread(
+            args=(self.queue, self.t_stop), target=self.playback_thread)
         self.t.daemon = True
         self.t.start()
 
@@ -174,7 +179,8 @@ class AlsaSink(Sink):
         elif mixer_volume < self.volmin:
             mixer_volume = self.volmin
 
-        volume = int(round((mixer_volume - self.volmin) / float(self.volmax - self.volmin) * 100))
+        volume = int(round((mixer_volume - self.volmin) /
+                           float(self.volmax - self.volmin) * 100))
         return volume
 
     def volume_set(self, volume):
@@ -183,11 +189,6 @@ class AlsaSink(Sink):
         else:
             if self.mixer.getmute()[0] == 1:
                 self.mixer.setmute(0)
-        mixer_volume = int(round((self.volmax - self.volmin) * volume / 100.0 + self.volmin))
+        mixer_volume = int(round((self.volmax - self.volmin) *
+                                 volume / 100.0 + self.volmin))
         self.mixer.setvolume(mixer_volume)
-
-class PlayerError(Exception):
-    pass
-
-class BufferFull(Exception):
-    pass

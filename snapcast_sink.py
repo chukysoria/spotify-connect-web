@@ -1,7 +1,8 @@
 import Queue
 import os
-import re
-from threading import Thread, Event
+from threading import Event, Thread
+
+from player_exceptions import BufferFull, PlayerError
 
 from spotifyconnect import Sink
 
@@ -15,11 +16,11 @@ NAMEDPIPE = '/tmp/snapfifo'
 
 pending_data = str()
 
+
 class SnapcastSink(Sink):
 
-
     def __init__(self, namedpipe=NAMEDPIPE, buffer_length=MAXPERIODS):
-        
+
         self.pipe = None
         self.namedpipe = namedpipe
 
@@ -31,8 +32,8 @@ class SnapcastSink(Sink):
 
         self.on()
 
-
-    def _on_music_delivery(self, audio_format, samples, num_samples, pending, session):
+    def _on_music_delivery(self, audio_format, samples,
+                           num_samples, pending, session):
         global pending_data
 
         buf = pending_data + samples
@@ -52,7 +53,7 @@ class SnapcastSink(Sink):
             pending[0] = self.buffer_length() * PERIODSIZE * CHANNELS
 
     def mixer_load(self, mixer="", volmin=0, volmax=100):
-        ##TODO: Implement mixer
+        # TODO: Implement mixer
         return
 
     def mixer_unload(self):
@@ -90,7 +91,8 @@ class SnapcastSink(Sink):
 
     def play(self):
         self.t_stop = Event()
-        self.t = Thread(args=(self.queue, self.t_stop), target=self.playback_thread)
+        self.t = Thread(args=(self.queue, self.t_stop),
+                        target=self.playback_thread)
         self.t.daemon = True
         self.t.start()
 
@@ -127,15 +129,9 @@ class SnapcastSink(Sink):
         self.volmax = volmax
 
     def volume_get(self):
-        #TODO:Implement mixer
+        # TODO:Implement mixer
         return 100
 
     def volume_set(self, volume):
-        #TODO:Implement mixer
+        # TODO:Implement mixer
         return 100
-
-class PlayerError(Exception):
-    pass
-
-class BufferFull(Exception):
-    pass
