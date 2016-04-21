@@ -5,12 +5,6 @@ language: python
 services:
 - docker
 
-env:
-- TOX_ENV=py27
-- TOX_ENV=py34
-- TOX_ENV=pypy
-- TOX_ENV=flake8
-
 addons:
   apt:
     packages:
@@ -23,7 +17,7 @@ install: true
 
 script:
 - docker run -v $TRAVIS_BUILD_DIR:/usr/src/app -e TOX_ENV=$TOX_ENV
-  chukysoria/spotify-connect-web -c 'tox -e $TOX_ENV'
+  chukysoria/spotify-connect-web -c 'py.test --cov=sc_console'
 
 after_success:
 - docker run -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH
