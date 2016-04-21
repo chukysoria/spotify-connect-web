@@ -14,11 +14,9 @@ from sc_console import Connect
 
 from flask import (Flask, flash, jsonify, redirect,
                    render_template, request, url_for)
-from flask.ext.cors import CORS
+from flask_cors import CORS
 
 from flask_bootstrap import Bootstrap
-
-from gevent.wsgi import WSGIServer
 
 import spotifyconnect
 
@@ -287,8 +285,7 @@ def add_user():
 if __name__ == "__main__":
     # Can be run on any port as long as it matches the one used in
     # avahi-publish-service
-    http_server = WSGIServer(('', 4000), app)
-    http_server.serve_forever()
+    app.run('0.0.0.0', port = 4000, use_reloader=False)
 
 # TODO: Add signal catcher
 connect_app.session.free_session()

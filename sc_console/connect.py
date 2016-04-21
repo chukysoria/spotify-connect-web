@@ -13,7 +13,7 @@ import player_exceptions
 import spotifyconnect
 
 __all__=[
-    Connect
+    'Connect'
 ]
 
 
@@ -99,7 +99,7 @@ class Connect:
             print("Error opening app key: {}.".format(e))
             print("If you don't have one, it can be obtained \
                    from https://developer.spotify.com/my-account/keys")
-            sys.exit(1)
+            raise e
 
         self.config.device_id = self.credentials['device-id']
         self.config.remote_name = self.args.name
