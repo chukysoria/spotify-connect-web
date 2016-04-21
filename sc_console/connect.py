@@ -130,7 +130,7 @@ class Connect:
 
         if self.args.audiosink == 'alsa':
             import alsa_sink
-            self.audio_player = alsa_sink.AlsaSink()
+            self.audio_player = alsa_sink.AlsaSink(self.args.device)
         elif self.args.audiosink == 'snapcast':
             import snapcast_sink
             self.audio_player = snapcast_sink.SnapcastSink()

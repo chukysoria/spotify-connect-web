@@ -145,12 +145,18 @@ def playback_volume_set():
 
 @app.route('/api/info/metadata')
 def info_metadata():
-    track = connect_app.session.player.current_track
-    res = track.__dict__
-    res['volume'] = connect_app.session.player.volume
-    res['cover_url_small'] = track.get_image_url(
-        spotifyconnect.ImageSize.Normal)
-    return jsonify(res)
+    try:
+        track = connect_app.session.player.current_track
+        res = track.__dict__
+        res['volume'] = connect_app.session.player.volume
+        res['cover_url_small'] = track.get_image_url(
+            spotifyconnect.ImageSize.Normal)
+        return jsonify(res)
+    except spotifyconnect.Error:
+        res = dict()
+        res['track_name'] = 'Not playing'
+    finally:
+        return jsonify(res)
 
 
 @app.route('/api/info/status')
@@ -187,7 +193,7 @@ def info_display_name_set():
 
 @app.route('/login/logout')
 def login_logout():
-    connec_app.session.connection.logout()
+    connect_app.session.connection.logout()
     return redirect(url_for('index'))
 
 
@@ -285,7 +291,7 @@ def add_user():
 if __name__ == "__main__":
     # Can be run on any port as long as it matches the one used in
     # avahi-publish-service
-    app.run('0.0.0.0', port = 4000, use_reloader=False)
+    app.run('0.0.0.0', port = 4000, use_reloader=False, debug=True)
 
 # TODO: Add signal catcher
 connect_app.session.free_session()
