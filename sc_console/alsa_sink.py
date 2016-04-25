@@ -115,6 +115,9 @@ class AlsaSink(Sink):
         except alsa.ALSAAudioError as error:
             raise PlayerError("PlayerError: {}".format(error))
 
+    def _close(self):
+        self.release()
+
     def release(self):
         self.device.close()
         self.device = None
