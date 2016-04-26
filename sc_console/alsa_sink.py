@@ -7,6 +7,7 @@ import alsaaudio as alsa
 from player_exceptions import BufferFull, PlayerError
 
 from spotifyconnect import Sink
+import sys
 
 
 RATE = 44100
@@ -22,13 +23,13 @@ class AlsaSink(Sink):
 
     def __init__(self, device, rate=RATE, channels=CHANNELS,
                  periodsize=PERIODSIZE, buffer_length=MAXPERIODS):
-        self.device = None
+        self._device = None
         self.device_name = device
         self.rate = rate
         self.channels = channels
         self.periodsize = periodsize
 
-        self.mixer = None
+        self._mixer = None
 
         self.queue = Queue.Queue(maxsize=buffer_length)
         self.t = Thread()
@@ -86,9 +87,8 @@ class AlsaSink(Sink):
                 mixer = device_mixers[0]
             else:
                 raise PlayerError("PlayerError: Device has no mixers")
-
         try:
-            self.mixer = alsa.Mixer(mixer, device=device, cardindex=cardindex)
+            self._mixer = alsa.Mixer(mixer, device=device, cardindex=cardindex)
         except alsa.ALSAAudioError as error:
             raise PlayerError("PlayerError: {}".format(error))
 
@@ -96,22 +96,29 @@ class AlsaSink(Sink):
         self.volmax = volmax
 
     def mixer_unload(self):
-        self.mixer.close()
-        self.mixer = None
+        self._mixer.close()
+        self._mixer = None
 
     def mixer_loaded(self):
-        if self.mixer is not None:
+        if self._mixer is not None:
             return True
         else:
             return False
 
     def acquire(self):
         try:
-            self.device = alsa.PCM(alsa.PCM_PLAYBACK, device=self.device_name)
-            self.device.setchannels(self.channels)
-            self.device.setrate(self.rate)
-            self.device.setperiodsize(self.periodsize)
-            self.device.setformat(alsa.PCM_FORMAT_S16_LE)
+            if hasattr(alsa, 'pcms'):  # pyalsaaudio >= 0.8
+                self._device = alsa.PCM(alsa.PCM_PLAYBACK, device=self.device_name)
+            else: # pyalsaaudio == 0.7
+                self._device = alsa.PCM(alsa.PCM_PLAYBACK, card=self.device_name)
+            if sys.byteorder == 'little':
+                self._device.setformat(alsa.PCM_FORMAT_S16_LE)
+            else:
+                self._device.setformat(alsa.PCM_FORMAT_S16_BE)
+            self._device.setchannels(self.channels)
+            self._device.setrate(self.rate)
+            self._device.setperiodsize(self.periodsize)
+            
         except alsa.ALSAAudioError as error:
             raise PlayerError("PlayerError: {}".format(error))
 
@@ -119,11 +126,11 @@ class AlsaSink(Sink):
         self.release()
 
     def release(self):
-        self.device.close()
-        self.device = None
+        self._device.close()
+        self._device = None
 
     def acquired(self):
-        if self.device is not None:
+        if self._device is not None:
             return True
         else:
             return False
@@ -132,7 +139,7 @@ class AlsaSink(Sink):
         while not e.is_set():
             data = q.get()
             if data:
-                self.device.write(data)
+                self._device.write(data)
             q.task_done()
 
     def play(self):
@@ -175,7 +182,7 @@ class AlsaSink(Sink):
         self.volmax = volmax
 
     def volume_get(self):
-        mixer_volume = self.mixer.getvolume()[0]
+        mixer_volume = self._mixer.getvolume()[0]
 
         if mixer_volume > self.volmax:
             mixer_volume = self.volmax
@@ -188,10 +195,10 @@ class AlsaSink(Sink):
 
     def volume_set(self, volume):
         if volume == 0:
-            self.mixer.setmute(1)
+            self._mixer.setmute(1)
         else:
-            if self.mixer.getmute()[0] == 1:
-                self.mixer.setmute(0)
+            if self._mixer.getmute()[0] == 1:
+                self._mixer.setmute(0)
         mixer_volume = int(round((self.volmax - self.volmin) *
                                  volume / 100.0 + self.volmin))
-        self.mixer.setvolume(mixer_volume)
+        self._mixer.setvolume(mixer_volume)
