@@ -12,6 +12,9 @@ import player_exceptions
 
 import spotifyconnect
 
+import alsa_sink
+import snapcast_sink
+
 __all__=[
     'Connect'
 ]
@@ -128,14 +131,12 @@ class Connect:
         self.session.player.on(
             spotifyconnect.PlayerEvent.PLAYBACK_SEEK, self.playback_seek)
 
-        if self.args.audiosink == 'alsa':
-            import alsa_sink
+        if self.args.audiosink == 'alsa':            
             self.audio_player = alsa_sink.AlsaSink(self.args.device)
-        elif self.args.audiosink == 'snapcast':
-            import snapcast_sink
+        elif self.args.audiosink == 'snapcast':            
             self.audio_player = snapcast_sink.SnapcastSink()
 
-        self.audio_player.mixer_load()
+        self.audio_player.mixer_load(self.args.mixer, volmin=self.args.volmin, volmax=self.args.volmax)
         self.session.player.on(
             spotifyconnect.PlayerEvent.PLAYBACK_VOLUME, self.volume_set)
 
