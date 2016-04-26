@@ -205,7 +205,7 @@ class TestAlsaSink(unittest.TestCase):
 
         self.assertTrue(self.sink.mixer_loaded())
 
-    def test_aquired_device_property_false(self):
+    def test_mixer_loaded_false(self):
         self.sink._mixer = None
 
         self.assertFalse(self.sink.mixer_loaded())

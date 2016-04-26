@@ -21,7 +21,7 @@ class SnapcastSink(Sink):
 
     def __init__(self, namedpipe=NAMEDPIPE, buffer_length=MAXPERIODS):
 
-        self.pipe = None
+        self._pipe = None
         self.namedpipe = namedpipe
 
         self.mixer = None
@@ -68,16 +68,19 @@ class SnapcastSink(Sink):
 
     def acquire(self):
         try:
-            self.pipe = os.open(self.namedpipe, os.O_WRONLY)
+            self._pipe = os.open(self.namedpipe, os.O_WRONLY)
         except IOError as error:
             raise PlayerError("PlayerError: {}".format(error))
 
+    def _close(self):
+        self.release()
+
     def release(self):
-        os.close(self.pipe)
-        self.pipe = None
+        os.close(self._pipe)
+        self._pipe = None
 
     def acquired(self):
-        if self.pipe is not None:
+        if self._pipe is not None:
             return True
         else:
             return False
@@ -86,7 +89,7 @@ class SnapcastSink(Sink):
         while not e.is_set():
             data = q.get()
             if data:
-                os.write(self.pipe, data)
+                os.write(self._pipe, data)
             q.task_done()
 
     def play(self):
