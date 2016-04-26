@@ -22,8 +22,7 @@ __all__=[
 
 class Connect:
 
-    def __init__(self, web_arg_parser=None):
-
+    def _createparser(self, web_arg_parser=None):
         if web_arg_parser:
             arg_parser = argparse.ArgumentParser(
                 description='Web interface for Spotify Connect',
@@ -75,7 +74,16 @@ class Connect:
                                 help='maximum mixer volume (percentage)',
                                 metavar='{1-100}', choices=xrange(1, 101),
                                 type=int, default=100)
-        self.args = arg_parser.parse_args()
+
+        return arg_parser
+
+    def __init__(self, web_arg_parser=None):
+        parser = self._createparser(web_arg_parser)
+        args = parser.parse_args()
+        self._main(args)
+    
+    def _main(self, args):    
+        self.args = args
 
         self.credentials = dict({
             'device-id': str(uuid.uuid4()),
