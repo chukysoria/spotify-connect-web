@@ -1,4 +1,6 @@
 import unittest
+import os
+import pytest
 
 from tests import mock
 
@@ -8,7 +10,6 @@ from sc_console.connect import PlaybackSession
 from sc_console.player_exceptions import PlayerError
 
 import spotifyconnect
-
 
 class Test_Connect(unittest.TestCase):
     
@@ -28,8 +29,9 @@ class Test_Connect(unittest.TestCase):
         self.mock_alsa.AlsaSink.return_value = self.sink
         self.event_loop = mock.Mock(spec = spotifyconnect.EventLoop)
         self.libspotify.EventLoop.return_value = self.event_loop
-
-        self.connect = sc_console.Connect()
+        open_mock = mock.mock_open(read_data='{}')
+        with mock.patch('sc_console.connect.open', open_mock, create=True) as self.opencredentials:
+            self.connect = sc_console.Connect()
     
     def tearDown(self):
         spotifyconnect._session_instance = None    
@@ -40,7 +42,12 @@ class Test_Connect(unittest.TestCase):
             sc_console.Connect()
     
     def test_init_defaults(self):
+        self.opencredentials.assert_called_once_with('credentials.json')        
         self.libspotify.Config.assert_called_once_with()
+        key_path = os.path.join(
+                os.path.dirname(
+                    os.path.realpath(sc_console.connect.__file__)), 'spotify_appkey.key')
+        self.config.load_application_key_file.assert_called_once_with(key_path)
         self.assertEqual(self.config.remote_name, 'TestConnect')
         connection_calls = [mock.call(self.libspotify.ConnectionEvent.CONNECTION_NOTIFY_UPDATED, self.connect.connection_notify),
                  mock.call(self.libspotify.ConnectionEvent.NEW_CREDENTIALS, self.connect.connection_new_credentials)] 
@@ -103,6 +110,44 @@ class Test_Connect(unittest.TestCase):
         self.mock_alsa.AlsaSink.assert_called_once_with('newdevice')
         #Mixer
         self.sink.mixer_load.assert_called_once_with('LineIn', volmin=20, volmax=80)
+
+    @mock.patch('sc_console.connect.snapcast_sink')
+    @mock.patch('sc_console.connect.spotifyconnect', spec=spotifyconnect)
+    def test_arguments_2(self, libspotify, mock_snapcast):
+        self.libspotify = libspotify
+        self.mock_snapcast = mock_snapcast
+        self.config = mock.Mock(spec=spotifyconnect.Config)
+        self.libspotify.Config.return_value = self.config
+        self.session = mock.Mock(spec=spotifyconnect.Session)
+        self.libspotify.Session.return_value = self.session
+        self.session.player.num_listeners.return_value = 0
+        spotifyconnect._session_instance = self.session
+        self.sink = mock.Mock(spec= sc_console.snapcast_sink.SnapcastSink)
+        self.mock_snapcast.SnapcastSink.return_value = self.sink
+        self.event_loop = mock.Mock(spec = spotifyconnect.EventLoop)
+        self.libspotify.EventLoop.return_value = self.event_loop
+        open_mock = mock.mock_open(read_data='{"username": "foo", "device-id": "9999", "blob": "longblob"}')
+        parser = self.connect._createparser()
+        args = parser.parse_args(['-b', '90',
+                                  '-c', '/fake/path',
+                                  '-a', 'snapcast'])
+
+        with mock.patch('sc_console.connect.open', open_mock, create=True) as m:
+            self.connect._main(args)
+
+        # Bitrate
+        self.session.player.set_bitrate.asser_called_once_with(self.libspotify.Bitrate.BITRATE_90k)
+        # Snapcast device
+        self.mock_snapcast.SnapcastSink.assert_called_once_with()
+        # Custom credentials file
+        m.assert_called_once_with('/fake/path')
+        self.session.connection.login.assert_called_once_with('foo', blob = 'longblob')
+        self.config.device_id = '9999'
+
+    def test_connection_notify(self):
+        self.connect.connection_notify(spotifyconnect.ConnectionState.LoggedIn, self.session)
+        resout, reserr = self.capfd.readouterr()
+        self.assertEqual(resout, 'LoggedIn')
 
 
 class Test_PlaybackSession(unittest.TestCase):

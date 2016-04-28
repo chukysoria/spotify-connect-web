@@ -70,3 +70,4 @@ target/
 
 #Spotify key
 *.key
+/credentials.json
