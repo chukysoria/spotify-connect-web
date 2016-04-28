@@ -21,7 +21,7 @@ pending_data = str()
 
 class AlsaSink(Sink):
 
-    def __init__(self, device, rate=RATE, channels=CHANNELS,
+    def __init__(self, device='default', rate=RATE, channels=CHANNELS,
                  periodsize=PERIODSIZE, buffer_length=MAXPERIODS):
         self._device = None
         self.device_name = device

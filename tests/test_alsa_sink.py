@@ -1,323 +1,177 @@
-import unittest
-
 from tests import mock
 
 import alsaaudio
 import spotifyconnect
 import sc_console.alsa_sink
+import pytest
 
-class TestAlsaSink(unittest.TestCase):
 
-    def setUp(self):
-        self.session = mock.Mock()
-        self.session.player.num_listeners.return_value = 0
-        spotifyconnect._session_instance = self.session
-        self.alsaaudio = mock.Mock()
-       
-        self.sink = sc_console.alsa_sink.AlsaSink('default')
+def test_off_closes_audio_device(alsasink):
+    device_mock = mock.Mock()
+    alsasink._device = device_mock
 
-    def tearDown(self):
-        spotifyconnect._session_instance = None
+    alsasink.off()
 
-    def test_off_closes_audio_device(self):
-        device_mock = mock.Mock()
-        self.sink._device = device_mock
+    device_mock.close.assert_called_with()
+    assert alsasink._device is None
 
-        self.sink.off()
-
-        device_mock.close.assert_called_with()
-        self.assertIsNone(self.sink._device)
-
-    def test_defaults(self):
-        self.assertEqual(self.sink.device_name, 'default')
-        self.assertEqual(self.sink.rate, sc_console.alsa_sink.RATE)
-        self.assertEqual(self.sink.channels, sc_console.alsa_sink.CHANNELS)
-        self.assertEqual(self.sink.periodsize, sc_console.alsa_sink.PERIODSIZE)
-        self.session.player.num_listeners.assert_called_once_with(spotifyconnect.PlayerEvent.MUSIC_DELIVERY) 
+def test_defaults(alsasink, sp_session):
+    assert alsasink.device_name == 'default'
+    assert alsasink.rate == sc_console.alsa_sink.RATE
+    assert alsasink.channels == sc_console.alsa_sink.CHANNELS
+    assert alsasink.periodsize == sc_console.alsa_sink.PERIODSIZE
+    sp_session.player.num_listeners.assert_called_once_with(spotifyconnect.PlayerEvent.MUSIC_DELIVERY) 
         
-    def test_initialization(self):        
-        self.sink = sc_console.alsa_sink.AlsaSink('other device', 100, 6, 0.43, 1348)
-
-        self.assertEqual(self.sink.device_name, 'other device')
-        self.assertEqual(self.sink.rate, 100)
-        self.assertEqual(self.sink.channels, 6)
-        self.assertEqual(self.sink.periodsize, 0.43)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_acquire_device(self, libalsa):
-        device = mock.Mock()
-        libalsa.PCM.return_value = device
-
-        self.sink.acquire()
-
-        # The ``device`` kwarg was added in pyalsaaudio 0.8
-        libalsa.PCM.assert_called_with(libalsa.PCM_PLAYBACK, device='default')
-        device.setrate.assert_called_with(sc_console.alsa_sink.RATE)
-        device.setchannels.assert_called_with(sc_console.alsa_sink.CHANNELS)
-        device.setperiodsize.assert_called_with(sc_console.alsa_sink.PERIODSIZE)
-
-    def test_aquired_device_property_true(self):
-        self.sink._device = mock.Mock()
-
-        self.assertTrue(self.sink.acquired())
-
-    def test_aquired_device_property_false(self):
-        self.sink._device = None
-
-        self.assertFalse(self.sink.acquired())
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_music_delivery_creates_device_with_alsaaudio_0_7(self, libalsa):
-        del libalsa.pcms  # Remove pyalsaudio 0.8 version marker
-        device = mock.Mock()
-        libalsa.PCM.return_value = device
-        audio_format = mock.Mock()
-
-        self.sink.acquire()
-
-        # The ``card`` kwarg was deprecated in pyalsaaudio 0.8
-        libalsa.PCM.assert_called_with(libalsa.PCM_PLAYBACK, card='default')
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_sets_little_endian_format_if_little_endian_system(self, libalsa):
-        device = mock.Mock()
-        libalsa.PCM.return_value = device
-
-        with mock.patch('sc_console.alsa_sink.sys') as sys_mock:
-            sys_mock.byteorder = 'little'
-
-            self.sink.acquire()
-
-        device.setformat.assert_called_with(libalsa.PCM_FORMAT_S16_LE)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_sets_big_endian_format_if_big_endian_system(self, libalsa):
-        device = mock.Mock()
-        libalsa.PCM.return_value = device
-
-        with mock.patch('sc_console.alsa_sink.sys') as sys_mock:
-            sys_mock.byteorder = 'big'
-
-            self.sink.acquire()
-
-        device.setformat.assert_called_with(libalsa.PCM_FORMAT_S16_BE)
-
-    def test_music_delivery_writes_frames_to_stream(self):
-        self.sink._device = mock.Mock()
-        self.sink.write = mock.Mock()
-        audio_format = mock.Mock()
-        audio_format.sample_type = spotifyconnect.SampleType.S16NativeEndian
-        pending = [0]
-        frames = "a" * 10000
-
-        num_consumed_frames = self.sink._on_music_delivery(
-            audio_format, 'abcd',
-             mock.sentinel.num_samples, pending, mock.sentinel.session)
-
-        self.assertEqual(num_consumed_frames, mock.sentinel.num_samples)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_mixer_load(self, libalsa):
-        libalsa.cards.return_value = {0,'default'}
-        libalsa.mixers.return_value = ['PCM']
-        libalsa.Mixer.return_value = mock.sentinel.mixer
-
-        self.sink.mixer_load()
-
-        libalsa.mixers.assert_called_with(device='default', cardindex=-1)
-        libalsa.Mixer.assert_called_with('PCM', device='default', cardindex=-1)
-        self.assertEqual(self.sink._mixer, mock.sentinel.mixer)
-        self.assertEqual(self.sink.volmin, 0)
-        self.assertEqual(self.sink.volmax, 100)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_mixer_load_with_custom_mixer(self, libalsa):
-        libalsa.cards.return_value = {'card0'}
-        libalsa.Mixer.return_value = mock.sentinel.mixer
-
-        self.sink.mixer_load('LineIn')
-
-        libalsa.Mixer.assert_called_with('LineIn', device='default', cardindex=-1)
-        self.assertEqual(self.sink._mixer, mock.sentinel.mixer)
-        self.assertEqual(self.sink.volmin, 0)
-        self.assertEqual(self.sink.volmax, 100)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_mixer_load_with_custom_volumes(self, libalsa):
-        libalsa.cards.return_value = {0,'default'}
-        libalsa.Mixer.return_value = mock.sentinel.mixer
-
-        self.sink.mixer_load('LineIn', 20, 80)
-
-        self.assertEqual(self.sink.volmin, 20)
-        self.assertEqual(self.sink.volmax, 80)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_mixer_load_with_card(self, libalsa):
-        self.sink.device_name = 'default:CARD=card1'
-        libalsa.cards.return_value = ['card0','card1']
-        libalsa.mixers.return_value = ['PCM']
-        libalsa.Mixer.return_value = mock.sentinel.mixer
-
-        self.sink.mixer_load()
-
-        libalsa.mixers.assert_called_with(device='default', cardindex=1)
-        libalsa.Mixer.assert_called_with('PCM', device='default', cardindex=1)
-        self.assertEqual(self.sink._mixer, mock.sentinel.mixer)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_mixer_load_with_device(self, libalsa):
-        self.sink.device_name = 'default:dev=surround'
-        libalsa.cards.return_value = ['card0','card1']
-        libalsa.mixers.return_value = ['PCM']
-        libalsa.Mixer.return_value = mock.sentinel.mixer
-
-        self.sink.mixer_load()
-
-        libalsa.mixers.assert_called_with(device='surround', cardindex=-1)
-        libalsa.Mixer.assert_called_with('PCM', device='surround', cardindex=-1)
-        self.assertEqual(self.sink._mixer, mock.sentinel.mixer)
-
-    @mock.patch('sc_console.alsa_sink.alsa', spec=alsaaudio)
-    def test_mixer_load_with_device_and_card(self, libalsa):
-        self.sink.device_name = 'default:CARD=card1,DEV=surround'
-        libalsa.cards.return_value = ['card0','card1']
-        libalsa.mixers.return_value = ['PCM']
-        libalsa.Mixer.return_value = mock.sentinel.mixer
-
-        self.sink.mixer_load()
-
-        libalsa.mixers.assert_called_with(device='surround', cardindex=1)
-        libalsa.Mixer.assert_called_with('PCM', device='surround', cardindex=1)
-        self.assertEqual(self.sink._mixer, mock.sentinel.mixer)
-
-    def test_mixer_unload(self):
-        mixer = mock.Mock()
-        self.sink._mixer = mixer
-
-        self.sink.mixer_unload()
-
-        mixer.close.assert_called_once_with()
-        self.sink._mixer = None
-
-    def test_mixer_loaded_true(self):
-        self.sink._mixer = mock.Mock()
-
-        self.assertTrue(self.sink.mixer_loaded())
-
-    def test_mixer_loaded_false(self):
-        self.sink._mixer = None
-
-        self.assertFalse(self.sink.mixer_loaded())
-
-    def test_playing_true(self):
-        self.sink.t.isAlive = mock.Mock(return_value=True)
-
-        self.assertTrue(self.sink.playing())
-
-    def test_playing_true(self):
-        self.sink.t.isAlive = mock.Mock(return_value=False)
-
-        self.assertFalse(self.sink.playing())
-
-    def test_volrange_set(self):
-        self.sink.volrange_set(10,76)
-
-        self.assertEqual(self.sink.volmin, 10)
-        self.assertEqual(self.sink.volmax, 76)
-
-    def test_volume_get_standard(self):
-        mixer = mock.Mock()
-        mixer.getvolume.return_value=[74]
-        self.sink._mixer = mixer
-        self.sink.volmax = 100
-        self.sink.volmin = 0
-
-        result = self.sink.volume_get()
-
-        self.assertEqual(result, 74)
-
-    def test_volume_get_with_max_value(self):
-        mixer = mock.Mock()
-        self.sink._mixer = mixer
-        self.sink.volmax = 70
-        self.sink.volmin = 0
-
-        mixer.getvolume.return_value=[74]
-        result1 = self.sink.volume_get()
-        mixer.getvolume.return_value=[35]
-        result2 = self.sink.volume_get()
-
-        self.assertEqual(result1, 100)
-        self.assertEqual(result2, 50)
-
-    def test_volume_get_with_min_value(self):
-        mixer = mock.Mock()
-        self.sink._mixer = mixer
-        self.sink.volmax = 100
-        self.sink.volmin = 20
-
-        mixer.getvolume.return_value=[10]
-        result1 = self.sink.volume_get()
-        mixer.getvolume.return_value=[40]
-        result2 = self.sink.volume_get()
-
-        self.assertEqual(result1, 0)
-        self.assertEqual(result2, 25)
-
-    def test_volume_get_with_min_max_value(self):
-        mixer = mock.Mock()
-        self.sink._mixer = mixer
-        self.sink.volmax = 80
-        self.sink.volmin = 20
-
-        mixer.getvolume.return_value=[60]
-        result = self.sink.volume_get()
-
-        self.assertEqual(result, 67)
-
-    def test_volume_set_standard(self):
-        mixer = mock.Mock()
-        mixer.getmute.return_value = [0]
-        self.sink._mixer = mixer
-        self.sink.volmax = 100
-        self.sink.volmin = 0
-
-        result = self.sink.volume_set(70)
-
-        mixer.setvolume.assert_called_once_with(70)
-
-    def test_volume_set_mute(self):
-        mixer = mock.Mock()
-        mixer.getmute.return_value = [0]
-        self.sink._mixer = mixer
-        self.sink.volmax = 100
-        self.sink.volmin = 0
-
-        result = self.sink.volume_set(0)
-
-        mixer.setvolume.assert_called_once_with(0)
-        mixer.setmute.assert_called_once_with(1)
-
-    def test_volume_set_unmute(self):
-        mixer = mock.Mock()
-        mixer.getmute.return_value = [1]
-        self.sink._mixer = mixer
-        self.sink.volmax = 100
-        self.sink.volmin = 0
-
-        result = self.sink.volume_set(80)
-
-        mixer.setvolume.assert_called_once_with(80)
-        mixer.setmute.assert_called_once_with(0)
-
-    def test_volume_set_standard_min_max(self):
-        mixer = mock.Mock()
-        mixer.getmute.return_value = [0]
-        self.sink._mixer = mixer
-        self.sink.volmax = 80
-        self.sink.volmin = 20
-
-        result = self.sink.volume_set(67)
-
-        mixer.setvolume.assert_called_once_with(60)
+def test_initialization(alsasink):        
+    alsasink = sc_console.alsa_sink.AlsaSink('other device', 100, 6, 0.43, 1348)
+
+    assert alsasink.device_name == 'other device'
+    assert alsasink.rate == 100
+    assert alsasink.channels == 6
+    assert alsasink.periodsize == 0.43
+
+def test_acquire_device(alsasink, libalsa, device):
+    alsasink.acquire()
+
+    # The ``device`` kwarg was added in pyalsaaudio 0.8
+    libalsa.PCM.assert_called_with(libalsa.PCM_PLAYBACK, device='default')
+    device.setrate.assert_called_with(sc_console.alsa_sink.RATE)
+    device.setchannels.assert_called_with(sc_console.alsa_sink.CHANNELS)
+    device.setperiodsize.assert_called_with(sc_console.alsa_sink.PERIODSIZE)
+
+def test_music_delivery_creates_device_with_alsaaudio_0_7(alsasink, libalsa):
+    del libalsa.pcms  # Remove pyalsaudio 0.8 version marker
+    audio_format = mock.Mock()
+
+    alsasink.acquire()
+
+    # The ``card`` kwarg was deprecated in pyalsaaudio 0.8
+    libalsa.PCM.assert_called_with(libalsa.PCM_PLAYBACK, card='default')
+
+@pytest.mark.parametrize("dev, expected", [
+    (mock.Mock(), True),
+    (None, False)
+])
+def test_aquired_device_property_true(alsasink, dev, expected):
+    alsasink._device = dev
+
+    assert alsasink.acquired() == expected
+
+@pytest.mark.parametrize("format,expected", [
+    ('little', alsaaudio.PCM_FORMAT_S16_LE),
+    ("big", alsaaudio.PCM_FORMAT_S16_BE)
+])
+def test_sets_endian_format(alsasink, libalsa, device, format, expected):
+    with mock.patch('sc_console.alsa_sink.sys') as sys_mock:
+        sys_mock.byteorder = format
+
+        alsasink.acquire()
+
+    device.setformat.assert_called_with(expected)
+
+def test_music_delivery_writes_frames_to_stream(alsasink):
+    alsasink._device = mock.Mock()
+    alsasink.write = mock.Mock()
+    audio_format = mock.Mock()
+    audio_format.sample_type = spotifyconnect.SampleType.S16NativeEndian
+    pending = [0]
+    frames = "a" * 10000
+
+    num_consumed_frames = alsasink._on_music_delivery(
+        audio_format, 'abcd',
+            mock.sentinel.num_samples, pending, mock.sentinel.session)
+
+    assert num_consumed_frames == mock.sentinel.num_samples
+
+@pytest.mark.parametrize('pcms_name, device_name, cardindex', [
+    ('default', 'default', -1),
+    ('default:dev=surround', 'surround', -1),
+    ('default:CARD=card1', 'default', 1),
+    ('default:CARD=card1,DEV=surround', 'surround', 1),
+    ('default:CARD=card0', 'default', 0)
+])
+@pytest.mark.parametrize("mix_args, mixer_name, volmin, volmax", [
+    ({}, 'PCM', 0, 100),
+    ({'volmin': 20}, 'PCM', 20, 100),
+    ({'volmax': 80}, 'PCM', 0, 80),
+    ({'volmin': 20, 'volmax': 80}, 'PCM', 20, 80),
+    ({'mixer': 'LineIn'}, 'LineIn', 0, 100)
+])
+def test_mixer_load(alsasink, libalsa, mixer, mix_args, mixer_name, volmin, volmax, pcms_name, device_name, cardindex):
+    alsasink.device_name = pcms_name
+    alsasink.mixer_load(**mix_args)
+
+    if not mix_args.has_key('mixer'):
+        libalsa.mixers.assert_called_with(device=device_name, cardindex=cardindex)
+    libalsa.Mixer.assert_called_with(mixer_name, device=device_name, cardindex=cardindex)
+    assert alsasink._mixer == mixer
+    assert alsasink.volmin == volmin
+    assert alsasink.volmax == volmax
+
+def test_mixer_unload(alsasink, mixer):
+    alsasink._mixer = mixer
+    alsasink.mixer_unload()
+
+    mixer.close.assert_called_once_with()
+    alsasink._mixer = None
+
+@pytest.mark.parametrize("mixer, expected", [
+    (mock.Mock(), True),
+    (None, False)
+])
+def test_mixer_loaded(alsasink, mixer, expected):
+    alsasink._mixer = mixer
+    assert alsasink.mixer_loaded() == expected
+
+@pytest.mark.parametrize("expected", [
+    True,
+    False
+])
+def test_playing(alsasink, expected):
+    alsasink.t.isAlive = mock.Mock(return_value=expected)
+
+    assert alsasink.playing() == expected
+
+def test_volrange_set(alsasink):
+    alsasink.volrange_set(10,76)
+
+    assert alsasink.volmin == 10
+    assert alsasink.volmax == 76
+
+@pytest.mark.parametrize("alsa_volume, volmin, volmax, expected", [
+    (74, 0, 100, 74),
+    (74, 0, 70, 100),
+    (35, 0, 70, 50),
+    (10, 20, 100, 0),
+    (40, 20, 100, 25),
+    (60, 20, 80, 67)
+])
+def test_volume_get_standard(alsasink, alsa_volume, volmin, volmax, expected):
+    alsasink._mixer.getvolume.return_value=[alsa_volume]
+    alsasink.volmin = volmin
+    alsasink.volmax = volmax
+
+    result = alsasink.volume_get()
+
+    assert result == expected
+
+@pytest.mark.parametrize("volume, volmin, volmax, expected", [
+    (74, 0, 100, 74),
+    (0, 0, 100, 0),
+    (100, 0, 70, 70),
+    (50, 0, 70, 35),
+    (25, 20, 100, 40),
+    (67, 20, 80, 60),
+    (0, 20, 80, 20)
+])
+def test_volume_set(alsasink, volume, volmin, volmax, expected):
+    alsasink._mixer.getmute.return_value = [1]
+    alsasink.volmin = volmin
+    alsasink.volmax = volmax
+    result = alsasink.volume_set(volume)
+
+    alsasink._mixer.setvolume.assert_called_once_with(expected)
+    if volume == 0:
+        alsasink._mixer.setmute.assert_called_once_with(1)
+    else:
+        alsasink._mixer.setmute.assert_called_once_with(0)
