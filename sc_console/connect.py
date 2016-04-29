@@ -19,10 +19,7 @@ __all__=[
     'Connect'
 ]
 
-
-class Connect:
-
-    def _createparser(self, web_arg_parser=None):
+def _createparser(web_arg_parser=None):
         if web_arg_parser:
             arg_parser = argparse.ArgumentParser(
                 description='Web interface for Spotify Connect',
@@ -77,10 +74,13 @@ class Connect:
 
         return arg_parser
 
-    def __init__(self, web_arg_parser=None):
-        parser = self._createparser(web_arg_parser)
-        args = parser.parse_args()
-        self._main(args)
+class Connect:
+
+    def __init__(self, web_arg_parser=None, parsedargs=None):
+        if not parsedargs:
+            parser = _createparser(web_arg_parser)
+            parsedargs = parser.parse_args()
+        self._main(parsedargs)
     
     def _main(self, args):    
         self.args = args
