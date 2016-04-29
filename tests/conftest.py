@@ -6,9 +6,10 @@ import os
 import alsaaudio
 
 @pytest.fixture()
-def sp_session():
+def sp_session(sp_zeroconf):
     session = mock.Mock(spec=spotifyconnect.Session)
     session.player.num_listeners.return_value = 0
+    session.get_zeroconf_vars.return_value = sp_zeroconf
     spotifyconnect._session_instance = session
 
     return session
@@ -23,6 +24,7 @@ def connect(request, libspotify, sp_session, sp_config, alsasink_module, mock_al
     libspotify.Config.return_value = sp_config
     libspotify.Session.return_value = sp_session
     libspotify.EventLoop.return_value = sp_eventloop
+    libspotify.PlaybackNotify = spotifyconnect.PlaybackNotify
     alsasink_module.AlsaSink.return_value = mock_alsasink
     snapcast_module.SnapcastSink.return_value = snapsink
     file_data = '{}'
@@ -58,8 +60,8 @@ def libspotify():
 
 @pytest.fixture
 def sp_zeroconf():
-    zc = spotifyconnect.Zeroconf(mock.Mock())
-    zc.public_key = 'pulic key'
+    zc = mock.Mock(spec=spotifyconnect.Zeroconf)
+    zc.public_key = 'public key'
     zc.device_id = 'device id'
     zc.active_user = 'active user'
     zc.remote_name = 'remote name'

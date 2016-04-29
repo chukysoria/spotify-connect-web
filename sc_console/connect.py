@@ -214,7 +214,7 @@ class Connect:
 
         elif notify == spotifyconnect.PlaybackNotify.Pause:
             print("kSpPlaybackNotifyPause")
-            if self.audio_player.playing():
+            if self.audio_player.acquired():
                 self.audio_player.pause()
                 self.audio_player.release()
                 print("DeviceReleased")

@@ -1,5 +1,6 @@
 import os
 import pytest
+import json
 
 from tests import mock
 
@@ -82,16 +83,73 @@ def test_spotify_key_missing():
     with pytest.raises(IOError):
         sc_console.Connect()
 
-def test_connection_notify(connect, capsys):
-    connect.connection_notify(spotifyconnect.ConnectionState.LoggedIn, connect.session)
+def test_connection_new_credentials(connect, capsys):
+    connect.connection_new_credentials('longblob', connect.session)
     out, err = capsys.readouterr()
-    assert out == 'LoggedIn\n'
+    assert out == 'longblob\n'
+    assert connect.credentials['blob'] == 'longblob'
+    assert connect.credentials['username'] == 'active user'
 
 @pytest.mark.commandline(['-d'])
 def test_debug_message(connect, capsys):
     connect.debug_message('foo', connect.session)
     out, err = capsys.readouterr()
     assert out == 'foo\n'
+
+@pytest.mark.parametrize('notify, expected',[
+    (spotifyconnect.PlaybackNotify.Play, 'kSpPlaybackNotifyPlay'),
+    (spotifyconnect.PlaybackNotify.TrackChanged, 'kSpPlaybackNotifyTrackChanged'),
+    (spotifyconnect.PlaybackNotify.Next, "kSpPlaybackNotifyNext"),
+    (spotifyconnect.PlaybackNotify.Prev, "kSpPlaybackNotifyPrev"),
+    (spotifyconnect.PlaybackNotify.ShuffleEnabled,"kSpPlaybackNotifyShuffleEnabled"),
+    (spotifyconnect.PlaybackNotify.ShuffleDisabled, "kSpPlaybackNotifyShuffleDisabled"),
+    (spotifyconnect.PlaybackNotify.RepeatEnabled, "kSpPlaybackNotifyRepeatEnabled"),
+    (spotifyconnect.PlaybackNotify.RepeatDisabled, "kSpPlaybackNotifyRepeatDisabled"),
+    (spotifyconnect.PlaybackNotify.BecameActive, "kSpPlaybackNotifyBecameActive"),
+    (spotifyconnect.PlaybackNotify.PlayTokenLost, "kSpPlaybackNotifyPlayTokenLost"),
+    (spotifyconnect.PlaybackNotify.AudioFlush, "kSpPlaybackEventAudioFlush"),
+    (19, "UNKNOWN PlaybackNotify 19")])
+def test_playback_notify(connect, capsys, notify, expected):
+    connect.playback_notify(notify, connect.session)
+    out, err = capsys.readouterr()
+    assert out == (expected + '\n')
+
+def test_playback_notify_BecameInactive(connect, capsys):
+    connect.playback_notify(spotifyconnect.PlaybackNotify.BecameActive, connect.session)
+    assert connect.playback_session.active
+
+@pytest.mark.parametrize('notify, expected',[
+    (spotifyconnect.PlaybackNotify.Pause, 'kSpPlaybackNotifyPause'),
+    (spotifyconnect.PlaybackNotify.BecameInactive, 'kSpPlaybackNotifyBecameInactive')])
+@pytest.mark.parametrize('acquired', [
+    True,
+    False])
+def test_playback_notify_release(connect, capsys, mock_alsasink, acquired, notify, expected):
+    mock_alsasink.acquired.return_value = acquired
+    connect.playback_notify(notify, connect.session)
+    out, err = capsys.readouterr()
+    expected += "\n"
+    if acquired:
+        connect.audio_player.pause.assert_called_once_with()
+        connect.audio_player.release.assert_called_once_with()
+        expected += "DeviceReleased\n"
+    else:
+        connect.audio_player.pause.assert_not_called
+        connect.audio_player.release.assert_not_called
+    assert out == expected
+
+@pytest.mark.parametrize('acquired', [
+    True,
+    False])
+def test_playback_notify_AudioFlush(connect, capsys, mock_alsasink, acquired):
+    mock_alsasink.acquired.return_value = acquired
+    connect.playback_notify(spotifyconnect.PlaybackNotify.AudioFlush, connect.session)
+    out, err = capsys.readouterr()
+    if acquired:
+        connect.audio_player.buffer_flush.assert_called_once_with()
+    else:
+        connect.audio_player.buffer_flush.assert_not_called
+    assert out == "kSpPlaybackEventAudioFlush\n"
 
 def test_volume_set(connect, capsys):
     connect.volume_set(47, connect.session)
@@ -103,6 +161,15 @@ def test_playback_seek(connect, capsys):
     connect.playback_seek(875, connect.session)
     out, err = capsys.readouterr()
     assert out =="playback_seek: 875\n"
+
+def test_zeroconf_vars(connect, capsys, sp_zeroconf):
+    connect.print_zeroconf_vars(sp_zeroconf)
+    out, err = capsys.readouterr()
+    assert out ==("public key: public key\n"
+                  "device id: device id\n"
+                  "remote name: remote name\n"
+                  "account req: premium\n"
+                  "device type: device type\n")
 
 # Playback sessions
 def test_playback_session_default():
