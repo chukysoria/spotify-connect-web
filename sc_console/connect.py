@@ -259,7 +259,7 @@ class Connect:
     def playback_seek(self, millis, session):
         print("playback_seek: {}".format(millis))
 
-    def signal_handler(self, signal, frame):
+    def signal_handler(self, signal, frame): # pragma: no cover
         self.event_loop.stop()
         self.session.connection.logout()
         self.session.free_session()
