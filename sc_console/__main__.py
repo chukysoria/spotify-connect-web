@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import sys
+from time import sleep
 
-import sc_console
 import spotifyconnect
 
-
+import sc_console
 
 
 def main():
@@ -12,7 +12,7 @@ def main():
     command_line = sc_console.CommandLineParser()
     parser = command_line.createparser()
     parsedargs = vars(parser.parse_args())
-    connect = sc_console.Connect(**parsedargs)
+    sc_console.Connect(**parsedargs)
     zeroconfserver = spotifyconnect.AvahiZeroConfServer(4000)
     zeroconfserver.run()
     while True:

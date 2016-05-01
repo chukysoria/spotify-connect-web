@@ -1,9 +1,13 @@
-import pytest
-import spotifyconnect
-from tests import mock
-import sc_console
-import os
 import alsaaudio
+
+import pytest
+
+import spotifyconnect
+
+import sc_console
+
+from tests import mock
+
 
 @pytest.fixture()
 def sp_session(sp_zeroconf):
@@ -14,13 +18,25 @@ def sp_session(sp_zeroconf):
 
     return session
 
+
 @pytest.fixture
 def sp_config():
     config = mock.Mock(spec=spotifyconnect.Config)
     return config
 
+
 @pytest.fixture
-def connect(request, libspotify, sp_session, sp_config, alsasink_module, mock_alsasink, sp_eventloop, openfile, snapcast_module, snapsink):
+def connect(
+        request,
+        libspotify,
+        sp_session,
+        sp_config,
+        alsasink_module,
+        mock_alsasink,
+        sp_eventloop,
+        openfile,
+        snapcast_module,
+        snapsink):
     libspotify.Config.return_value = sp_config
     libspotify.Session.return_value = sp_session
     libspotify.EventLoop.return_value = sp_eventloop
@@ -39,24 +55,27 @@ def connect(request, libspotify, sp_session, sp_config, alsasink_module, mock_al
         cmd_args = getattr(request.function.commandline, "args")[0]
     except AttributeError:
         cmd_args = []
-    finally:        
+    finally:
         parser = sc_console.CommandLineParser().createparser()
         kwargs = vars(parser.parse_args(cmd_args))
-        connect = sc_console.Connect(**kwargs)      
+        connect = sc_console.Connect(**kwargs)
 
     return connect
+
 
 @pytest.yield_fixture
 def openfile():
     patcher = mock.patch.object(sc_console.connect, 'open')
     yield patcher.start()
     patcher.stop()
-        
+
+
 @pytest.yield_fixture
 def libspotify():
     patcher = mock.patch.object(sc_console.connect, 'spotifyconnect')
     yield patcher.start()
     patcher.stop()
+
 
 @pytest.fixture
 def sp_zeroconf():
@@ -68,8 +87,9 @@ def sp_zeroconf():
     zc.account_req = 'premium'
     zc.device_type = 'device type'
     zc.library_version = 'library version'
-    
+
     return zc
+
 
 @pytest.yield_fixture
 def alsasink_module():
@@ -77,17 +97,20 @@ def alsasink_module():
     yield patcher.start()
     patcher.stop()
 
+
 @pytest.yield_fixture
 def snapcast_module():
     patcher = mock.patch.object(sc_console.connect, 'snapcast_sink')
     yield patcher.start()
     patcher.stop()
 
+
 @pytest.fixture
 def sp_eventloop():
-    event_loop = mock.Mock(spec = spotifyconnect.EventLoop)
+    event_loop = mock.Mock(spec=spotifyconnect.EventLoop)
 
     return event_loop
+
 
 @pytest.yield_fixture
 def snapcast_os():
@@ -102,13 +125,15 @@ def snapsink(sp_session):
 
     return sink
 
+
 @pytest.fixture
 def mixer():
     mixer = mock.Mock(spec=alsaaudio.Mixer)
     mixer.getmute.return_value = [0]
     mixer.getvolume.return_value = [38]
 
-    return mixer    
+    return mixer
+
 
 @pytest.fixture
 def device():
@@ -116,21 +141,24 @@ def device():
 
     return device
 
+
 @pytest.yield_fixture()
 def libalsa():
-    patcher = mock.patch.object(sc_console.alsa_sink, 'alsa')    
+    patcher = mock.patch.object(sc_console.alsa_sink, 'alsa')
     yield patcher.start()
     patcher.stop()
+
 
 @pytest.fixture
 def mock_alsasink(sp_session, libalsa, device, mixer):
     sink = mock.Mock(spec=sc_console.alsa_sink.AlsaSink())
-    
-    return sink    
+
+    return sink
+
 
 @pytest.fixture
 def alsasink(sp_session, libalsa, device, mixer):
-    libalsa.cards.return_value = ['card0','card1']
+    libalsa.cards.return_value = ['card0', 'card1']
     libalsa.PCM.return_value = device
     libalsa.mixers.return_value = ['PCM']
     libalsa.Mixer.return_value = mixer
@@ -138,5 +166,5 @@ def alsasink(sp_session, libalsa, device, mixer):
     libalsa.PCM_FORMAT_S16_BE = alsaaudio.PCM_FORMAT_S16_BE
     sink = sc_console.alsa_sink.AlsaSink()
     sink.mixer_load()
-    
-    return sink    
+
+    return sink

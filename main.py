@@ -10,16 +10,15 @@ import os
 import re
 from time import sleep
 
-from sc_console import Connect
-
 from flask import (Flask, flash, jsonify, redirect,
                    render_template, request, url_for)
-from flask_cors import CORS
-
 from flask_bootstrap import Bootstrap
+
+from flask_cors import CORS
 
 import spotifyconnect
 
+from sc_console import Connect
 
 web_arg_parser = argparse.ArgumentParser(add_help=False)
 
@@ -291,7 +290,7 @@ def add_user():
 if __name__ == "__main__":
     # Can be run on any port as long as it matches the one used in
     # avahi-publish-service
-    app.run('0.0.0.0', port = 4000, use_reloader=False, debug=True)
+    app.run('0.0.0.0', port=4000, use_reloader=False, debug=True)
 
 # TODO: Add signal catcher
 connect_app.session.free_session()

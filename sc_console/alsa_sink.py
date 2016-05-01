@@ -1,13 +1,13 @@
 import Queue
 import re
+import sys
 from threading import Event, Thread
 
 import alsaaudio as alsa
 
-from player_exceptions import BufferFull, PlayerError
-
 from spotifyconnect import Sink
-import sys
+
+from sc_console.player_exceptions import BufferFull, PlayerError
 
 
 RATE = 44100
@@ -108,9 +108,11 @@ class AlsaSink(Sink):
     def acquire(self):
         try:
             if hasattr(alsa, 'pcms'):  # pyalsaaudio >= 0.8
-                self._device = alsa.PCM(alsa.PCM_PLAYBACK, device=self.device_name)
-            else: # pyalsaaudio == 0.7
-                self._device = alsa.PCM(alsa.PCM_PLAYBACK, card=self.device_name)
+                self._device = alsa.PCM(
+                    alsa.PCM_PLAYBACK, device=self.device_name)
+            else:  # pyalsaaudio == 0.7
+                self._device = alsa.PCM(
+                    alsa.PCM_PLAYBACK, card=self.device_name)
             if sys.byteorder == 'little':
                 self._device.setformat(alsa.PCM_FORMAT_S16_LE)
             else:
@@ -118,7 +120,7 @@ class AlsaSink(Sink):
             self._device.setchannels(self.channels)
             self._device.setrate(self.rate)
             self._device.setperiodsize(self.periodsize)
-            
+
         except alsa.ALSAAudioError as error:
             raise PlayerError("PlayerError: {}".format(error))
 

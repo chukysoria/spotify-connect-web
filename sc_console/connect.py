@@ -3,29 +3,39 @@ import os
 import signal
 import sys
 import uuid
-from time import sleep
 
 import player_exceptions
 
 import spotifyconnect
 
-import alsa_sink
-import snapcast_sink
+from sc_console.alsa_sink import AlsaSink
+from sc_console.snapcast_sink import SnapcastSink
 
-__all__=[
+__all__ = [
     'Connect'
 ]
 
-class Connect:
-  
-    def __init__(self, key=None, username=None, password=None, name='TestConnect',
-                 bitrate=160, credentials='credentials.json', audiosink='alsa',
-                 device='default', mixer=None, volmin=0, volmax=100, debug=False):    
 
+class Connect:
+
+    def __init__(
+            self,
+            key=None,
+            username=None,
+            password=None,
+            name='TestConnect',
+            bitrate=160,
+            credentials='credentials.json',
+            audiosink='alsa',
+            device='default',
+            mixer=None,
+            volmin=0,
+            volmax=100,
+            debug=False):
 
         if key is None:
             key = os.path.join(os.path.dirname(
-                    os.path.realpath(__file__)), 'spotify_appkey.key')
+                os.path.realpath(__file__)), 'spotify_appkey.key')
 
         self._credentials = dict({
             'device-id': str(uuid.uuid4()),
@@ -82,10 +92,10 @@ class Connect:
         self.session.player.on(
             spotifyconnect.PlayerEvent.PLAYBACK_SEEK, self.playback_seek)
 
-        if audiosink == 'alsa':            
-            self.audio_player = alsa_sink.AlsaSink(device)
-        elif audiosink == 'snapcast':            
-            self.audio_player = snapcast_sink.SnapcastSink()
+        if audiosink == 'alsa':
+            self.audio_player = AlsaSink(device)
+        elif audiosink == 'snapcast':
+            self.audio_player = SnapcastSink()
 
         self.audio_player.mixer_load(mixer, volmin=volmin, volmax=volmax)
         self.session.player.on(
@@ -118,7 +128,7 @@ class Connect:
 
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
-    
+
     _credentials = None
     credential_file = None
 
@@ -205,7 +215,7 @@ class Connect:
     def playback_seek(self, millis, session):
         print("playback_seek: {}".format(millis))
 
-    def signal_handler(self, signal, frame): # pragma: no cover
+    def signal_handler(self, signal, frame):  # pragma: no cover
         self.event_loop.stop()
         self.session.connection.logout()
         self.session.free_session()
@@ -233,4 +243,3 @@ class PlaybackSession:
 
     def deactivate(self):
         self._active = False
-

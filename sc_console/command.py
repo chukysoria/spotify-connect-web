@@ -1,9 +1,10 @@
 import argparse
 import os
 
-__all__=[
+__all__ = [
     'CommandLineParser'
 ]
+
 
 class CommandLineParser():
 
