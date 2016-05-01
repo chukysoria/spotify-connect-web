@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-import argparse
 import json
 import os
 import signal
@@ -19,101 +16,47 @@ __all__=[
     'Connect'
 ]
 
-def _createparser(web_arg_parser=None):
-        if web_arg_parser:
-            arg_parser = argparse.ArgumentParser(
-                description='Web interface for Spotify Connect',
-                parents=[web_arg_parser], add_help=True)
-        else:
-            arg_parser = argparse.ArgumentParser(
-                description='Web interface for Spotify Connect', add_help=True)
-        arg_parser.add_argument(
-            '--debug', '-d',
-            help='enable libspotify_embedded/flask debug output',
-            action="store_true")
-        arg_parser.add_argument(
-            '--key', '-k',
-            help='path to spotify_appkey.key \
-            (can be obtained from \
-            https://developer.spotify.com/my-account/keys )',
-            default=os.path.join(
-                os.path.dirname(
-                    os.path.realpath(__file__)), 'spotify_appkey.key'))
-        arg_parser.add_argument(
-            '--username', '-u', help='your spotify username')
-        arg_parser.add_argument(
-            '--password', '-p', help='your spotify password')
-        arg_parser.add_argument(
-            '--name', '-n', help='name that shows up in the spotify client',
-            default='TestConnect')
-        arg_parser.add_argument(
-            '--bitrate', '-b',
-            help='Sets bitrate of alsa_sink stream (may not actually work)',
-            choices=[90, 160, 320], type=int, default=160)
-        arg_parser.add_argument(
-            '--credentials', '-c',
-            help='File to load and save credentials from/to',
-            default='credentials.json')
-        arg_parser.add_argument(
-            '--audiosink', '-a',
-            help='output audio to alsa device or to Snapcast',
-            choices=['alsa', 'snapcast'], default='alsa')
-        arg_parser.add_argument(
-            '--device', '-D', help='alsa output device', default='default')
-        arg_parser.add_argument('--mixer', '-m',
-                                help='alsa mixer name for volume control',
-                                default='')
-        arg_parser.add_argument('--volmin', '-v',
-                                help='minimum mixer volume (percentage)',
-                                metavar='{0-99}', choices=xrange(0, 100),
-                                type=int, default=0)
-        arg_parser.add_argument('--volmax', '-V',
-                                help='maximum mixer volume (percentage)',
-                                metavar='{1-100}', choices=xrange(1, 101),
-                                type=int, default=100)
-
-        return arg_parser
-
 class Connect:
+  
+    def __init__(self, key=None, username=None, password=None, name='TestConnect',
+                 bitrate=160, credentials='credentials.json', audiosink='alsa',
+                 device='default', mixer=None, volmin=0, volmax=100, debug=False):    
 
-    def __init__(self, web_arg_parser=None, parsedargs=None):
-        if not parsedargs:
-            parser = _createparser(web_arg_parser)
-            parsedargs = parser.parse_args()
-        self._main(parsedargs)
-    
-    def _main(self, args):    
-        self.args = args
 
-        self.credentials = dict({
+        if key is None:
+            key = os.path.join(os.path.dirname(
+                    os.path.realpath(__file__)), 'spotify_appkey.key')
+
+        self._credentials = dict({
             'device-id': str(uuid.uuid4()),
             'username': None,
             'blob': None
         })
 
+        self.credential_file = credentials
         try:
-            with open(self.args.credentials) as f:
-                self.credentials.update(
+            with open(self.credential_file) as f:
+                self._credentials.update(
                     {k: v.encode('utf-8') if isinstance(v, unicode) else v
                      for (k, v)
                      in json.loads(f.read()).iteritems()})
         except IOError:
             pass
 
-        if self.args.username:
-            self.credentials['username'] = self.args.username
+        if username:
+            self._credentials['username'] = username
 
         self.config = spotifyconnect.Config()
         try:
-            self.config.load_application_key_file(self.args.key)
+            self.config.load_application_key_file(key)
         except IOError as e:
             print("Error opening app key: {}.".format(e))
             print("If you don't have one, it can be obtained \
                    from https://developer.spotify.com/my-account/keys")
             raise e
 
-        self.config.device_id = self.credentials['device-id']
-        self.config.remote_name = self.args.name
+        self.config.device_id = self._credentials['device-id']
+        self.config.remote_name = name
 
         try:
             self.session = spotifyconnect.Session(self.config)
@@ -130,7 +73,7 @@ class Connect:
             spotifyconnect.ConnectionEvent.NEW_CREDENTIALS,
             self.connection_new_credentials)
 
-        if self.args.debug:
+        if debug:
             self.session.connection.on(
                 spotifyconnect.DebugEvent.DEBUG_MESSAGE, self.debug_message)
 
@@ -139,34 +82,34 @@ class Connect:
         self.session.player.on(
             spotifyconnect.PlayerEvent.PLAYBACK_SEEK, self.playback_seek)
 
-        if self.args.audiosink == 'alsa':            
-            self.audio_player = alsa_sink.AlsaSink(self.args.device)
-        elif self.args.audiosink == 'snapcast':            
+        if audiosink == 'alsa':            
+            self.audio_player = alsa_sink.AlsaSink(device)
+        elif audiosink == 'snapcast':            
             self.audio_player = snapcast_sink.SnapcastSink()
 
-        self.audio_player.mixer_load(self.args.mixer, volmin=self.args.volmin, volmax=self.args.volmax)
+        self.audio_player.mixer_load(mixer, volmin=volmin, volmax=volmax)
         self.session.player.on(
             spotifyconnect.PlayerEvent.PLAYBACK_VOLUME, self.volume_set)
 
         mixer_volume = self.audio_player.volume_get()
         self.session.player.volume = mixer_volume
 
-        if self.args.bitrate == 90:
-            bitrate = spotifyconnect.Bitrate.BITRATE_90k
-        elif self.args.bitrate == 160:
-            bitrate = spotifyconnect.Bitrate.BITRATE_160k
-        elif self.args.bitrate == 320:
-            bitrate = spotifyconnect.Bitrate.BITRATE_320k
-        self.session.player.set_bitrate(bitrate)
+        if bitrate == 90:
+            sp_bitrate = spotifyconnect.Bitrate.BITRATE_90k
+        elif bitrate == 160:
+            sp_bitrate = spotifyconnect.Bitrate.BITRATE_160k
+        elif bitrate == 320:
+            sp_bitrate = spotifyconnect.Bitrate.BITRATE_320k
+        self.session.player.set_bitrate(sp_bitrate)
 
         self.print_zeroconf_vars(self.session.get_zeroconf_vars())
 
-        if self.credentials['username'] and self.args.password:
+        if self._credentials['username'] and password:
             self.session.connection.login(
-                self.credentials['username'], password=self.args.password)
-        elif self.credentials['username'] and self.credentials['blob']:
+                self._credentials['username'], password=password)
+        elif self._credentials['username'] and self._credentials['blob']:
             self.session.connection.login(
-                self.credentials['username'], blob=self.credentials['blob'])
+                self._credentials['username'], blob=self._credentials['blob'])
 
         self.playback_session = PlaybackSession()
 
@@ -175,6 +118,9 @@ class Connect:
 
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
+    
+    _credentials = None
+    credential_file = None
 
     # Connection callbacks
     def connection_notify(self, notify, session):
@@ -182,13 +128,13 @@ class Connect:
 
     def connection_new_credentials(self, blob, session):
         print(blob)
-        self.credentials['blob'] = blob
+        self._credentials['blob'] = blob
 
         zeroconf = session.get_zeroconf_vars()
-        self.credentials['username'] = zeroconf.active_user
+        self._credentials['username'] = zeroconf.active_user
 
-        with open(self.args.credentials, 'w') as f:
-            f.write(json.dumps(self.credentials))
+        with open(self.credential_file, 'w') as f:
+            f.write(json.dumps(self._credentials))
 
     # Debug callbacks
     def debug_message(self, msg, session):
@@ -288,16 +234,3 @@ class PlaybackSession:
     def deactivate(self):
         self._active = False
 
-
-# First run the command
-# avahi-publish-service TestConnect _spotify-connect._tcp 4000
-# VERSION=1.0 CPath=/login/_zeroconf
-#
-# Only run if script is run directly and not by an import
-if __name__ == "__main__":
-    connect = Connect()
-    zeroconfserver = spotifyconnect.AvahiZeroConfServer(4000)
-    zeroconfserver.run()
-
-    while True:
-        sleep(5)

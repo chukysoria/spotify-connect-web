@@ -52,7 +52,7 @@ def test_arguments(connect, libspotify, alsasink_module, libalsa):
     # Key path
     connect.config.load_application_key_file.assert_called_once_with('/route/to/key')
     # Username
-    assert connect.credentials['username'] == 'foo'
+    assert connect._credentials['username'] == 'foo'
     # Password
     connect.session.connection.login.assert_called_once_with('foo', password = 'bar')
     # Name
@@ -87,8 +87,8 @@ def test_connection_new_credentials(connect, capsys):
     connect.connection_new_credentials('longblob', connect.session)
     out, err = capsys.readouterr()
     assert out == 'longblob\n'
-    assert connect.credentials['blob'] == 'longblob'
-    assert connect.credentials['username'] == 'active user'
+    assert connect._credentials['blob'] == 'longblob'
+    assert connect._credentials['username'] == 'active user'
 
 @pytest.mark.commandline(['-d'])
 def test_debug_message(connect, capsys):

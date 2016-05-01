@@ -36,13 +36,13 @@ def connect(request, libspotify, sp_session, sp_config, alsasink_module, mock_al
         openfile.side_effect = mock.mock_open(read_data=file_data)
 
     try:
-        args = getattr(request.function.commandline, "args")[0]
+        cmd_args = getattr(request.function.commandline, "args")[0]
     except AttributeError:
-        args = []
+        cmd_args = []
     finally:        
-        parser = sc_console.connect._createparser()
-        args = parser.parse_args(args)
-        connect = sc_console.Connect(parsedargs=args)      
+        parser = sc_console.CommandLineParser().createparser()
+        kwargs = vars(parser.parse_args(cmd_args))
+        connect = sc_console.Connect(**kwargs)      
 
     return connect
 
