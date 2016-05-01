@@ -1,0 +1,12 @@
+include *.py
+include *.md
+include *.js
+include *.css
+include setup.cfg
+include LICENSE
+include MANIFEST.in
+
+include static/*
+include templates/*
+
+global-exclude __pycache__/*
