@@ -1,10 +1,15 @@
-import Queue
+try:
+    # Python 3
+    import queue
+except ImportError:
+    # Python 2
+    import Queue as queue
 import os
 from threading import Event, Thread
 
-from player_exceptions import BufferFull, PlayerError
-
 from spotifyconnect import Sink
+
+from sc_console.player_exceptions import BufferFull, PlayerError
 
 
 RATE = 44100
@@ -26,7 +31,7 @@ class SnapcastSink(Sink):
 
         self.mixer = None
 
-        self.queue = Queue.Queue(maxsize=buffer_length)
+        self.queue = queue.Queue(maxsize=buffer_length)
         self.t = Thread()
         self.t.name = "SnapcastSinkLoop"
 
@@ -116,7 +121,7 @@ class SnapcastSink(Sink):
     def write(self, data):
         try:
             self.queue.put(data, block=False)
-        except Queue.Full:
+        except queue.Full:
             raise BufferFull()
 
     def buffer_flush(self):

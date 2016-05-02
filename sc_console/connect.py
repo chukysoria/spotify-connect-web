@@ -1,14 +1,17 @@
+from __future__ import unicode_literals
+
 import json
 import os
 import signal
 import sys
 import uuid
 
-import player_exceptions
+import six
 
 import spotifyconnect
 
 from sc_console.alsa_sink import AlsaSink
+from sc_console.player_exceptions import PlayerError
 from sc_console.snapcast_sink import SnapcastSink
 
 __all__ = [
@@ -47,9 +50,9 @@ class Connect:
         try:
             with open(self.credential_file) as f:
                 self._credentials.update(
-                    {k: v.encode('utf-8') if isinstance(v, unicode) else v
+                    {k: v.encode('utf-8') if isinstance(v, str) else v
                      for (k, v)
-                     in json.loads(f.read()).iteritems()})
+                     in six.iteritems(json.loads(f.read()))})
         except IOError:
             pass
 
@@ -162,7 +165,7 @@ class Connect:
                         self.audio_player.acquire()
                         print("DeviceAcquired")
                         self.audio_player.play()
-                    except player_exceptions.PlayerError as error:
+                    except PlayerError as error:
                         print(error)
                         session.player.pause()
                 else:

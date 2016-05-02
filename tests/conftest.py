@@ -31,18 +31,18 @@ def connect(
         libspotify,
         sp_session,
         sp_config,
-        alsasink_module,
+        alsasink_class,
         mock_alsasink,
         sp_eventloop,
         openfile,
-        snapcast_module,
+        snaspcast_class,
         snapsink):
     libspotify.Config.return_value = sp_config
     libspotify.Session.return_value = sp_session
     libspotify.EventLoop.return_value = sp_eventloop
     libspotify.PlaybackNotify = spotifyconnect.PlaybackNotify
-    alsasink_module.AlsaSink.return_value = mock_alsasink
-    snapcast_module.SnapcastSink.return_value = snapsink
+    alsasink_class.return_value = mock_alsasink
+    snaspcast_class.return_value = snapsink
     file_data = '{}'
     try:
         file_data = getattr(request.function.credentials_file, "args")[0]
@@ -58,16 +58,16 @@ def connect(
     finally:
         parser = sc_console.CommandLineParser().createparser()
         kwargs = vars(parser.parse_args(cmd_args))
-        connect = sc_console.Connect(**kwargs)
+        with mock.patch('sc_console.connect.open', openfile, create=True):
+            connect = sc_console.Connect(**kwargs)
 
     return connect
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def openfile():
-    patcher = mock.patch.object(sc_console.connect, 'open')
-    yield patcher.start()
-    patcher.stop()
+    m = mock.mock_open()
+    return m
 
 
 @pytest.yield_fixture
@@ -92,15 +92,15 @@ def sp_zeroconf():
 
 
 @pytest.yield_fixture
-def alsasink_module():
-    patcher = mock.patch.object(sc_console.connect, 'alsa_sink')
+def alsasink_class():
+    patcher = mock.patch.object(sc_console.connect, 'AlsaSink')
     yield patcher.start()
     patcher.stop()
 
 
 @pytest.yield_fixture
-def snapcast_module():
-    patcher = mock.patch.object(sc_console.connect, 'snapcast_sink')
+def snaspcast_class():
+    patcher = mock.patch.object(sc_console.connect, 'SnapcastSink')
     yield patcher.start()
     patcher.stop()
 

@@ -12,7 +12,7 @@ from tests import mock
 
 def test_init_defaults(
         libspotify,
-        alsasink_module,
+        alsasink_class,
         mock_alsasink,
         connect,
         sp_eventloop,
@@ -46,7 +46,7 @@ def test_init_defaults(
         mock.call(
                 libspotify.PlayerEvent.PLAYBACK_VOLUME, connect.volume_set)]
     connect.session.player.on.assert_has_calls(player_calls, any_order=True)
-    alsasink_module.AlsaSink.assert_called_once_with('default')
+    alsasink_class.assert_called_once_with('default')
     assert connect.audio_player == mock_alsasink
     connect.audio_player.mixer_load.assert_called_once_with(
         '', volmin=0, volmax=100)
@@ -67,7 +67,7 @@ def test_init_defaults(
                           '-m', 'LineIn',
                           '-v', '20',
                           '-V', '80'])
-def test_arguments(connect, libspotify, alsasink_module, libalsa):
+def test_arguments(connect, libspotify, alsasink_class, libalsa):
     # Debug
     connection_calls = [
         mock.call(
@@ -89,7 +89,7 @@ def test_arguments(connect, libspotify, alsasink_module, libalsa):
     connect.session.player.set_bitrate.asser_called_once_with(
         libspotify.Bitrate.BITRATE_320k)
     # Alsa device
-    alsasink_module.AlsaSink.assert_called_once_with('newdevice')
+    alsasink_class.assert_called_once_with('newdevice')
     # Mixer
     connect.audio_player.mixer_load.assert_called_once_with(
         'LineIn', volmin=20, volmax=80)
@@ -109,7 +109,7 @@ def test_arguments_2(connect, snapsink, openfile, libspotify):
     # Custom credentials file
     openfile.assert_called_once_with('/fake/path')
     connect.session.connection.login.assert_called_once_with(
-        'foo', blob='longblob')
+        b'foo', blob=b'longblob')
     connect.session.config.device_id = '9999'
 
 

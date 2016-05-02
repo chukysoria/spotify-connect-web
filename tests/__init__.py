@@ -3,4 +3,4 @@ try:
     from unittest import mock
 except ImportError:
     # From PyPI
-    import mock
+    import mock  # noqa

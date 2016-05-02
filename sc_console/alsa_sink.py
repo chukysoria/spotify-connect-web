@@ -1,4 +1,9 @@
-import Queue
+try:
+    # Python 3
+    import queue
+except ImportError:
+    # Python 2
+    import Queue as queue
 import re
 import sys
 from threading import Event, Thread
@@ -31,7 +36,7 @@ class AlsaSink(Sink):
 
         self._mixer = None
 
-        self.queue = Queue.Queue(maxsize=buffer_length)
+        self.queue = queue.Queue(maxsize=buffer_length)
         self.t = Thread()
         self.t.name = "AlsaSinkLoop"
 
@@ -168,7 +173,7 @@ class AlsaSink(Sink):
     def write(self, data):
         try:
             self.queue.put(data, block=False)
-        except Queue.Full:
+        except queue.Full:
             raise BufferFull()
 
     def buffer_flush(self):
