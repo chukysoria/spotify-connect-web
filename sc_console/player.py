@@ -23,7 +23,7 @@ class Player(Sink):
         self.t.name = "{0}Loop".format(type(self).__name__)
 
         self.on()
-    
+
     _device = None
     _mixer = None
 

@@ -170,8 +170,16 @@ def alsasink(sp_session, libalsa, device, mixer):
 
     return sink
 
+
 @pytest.fixture
 def player(sp_session):
     player = sc_console.player.Player(buffer_length=50)
+    player.release = mock.Mock()
+    player._getvolume = mock.Mock()
+    player._getvolume.return_value = 38
+    player._setvolume = mock.Mock()
+    player._getmute = mock.Mock()
+    player._getmute.return_value = False
+    player._setmute = mock.Mock()
 
     return player
