@@ -39,7 +39,8 @@ setup(
         'Flask-Bootstrap >= 3.3.2.1',
         'Flask-Cors >= 2.1.2',
         'pyalsaaudio >= 0.8',
-        'pyspotify-connect >= 0.1.0'],
+        'pyspotify-connect >= 0.1.0',
+        'six >= 1.10.0'],
     entry_points={
         'console_scripts': [
             'spotifyconnect = sc_console.__main__:main'
