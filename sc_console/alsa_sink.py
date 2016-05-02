@@ -1,30 +1,18 @@
-try:
-    # Python 3
-    import queue
-except ImportError:
-    # Python 2
-    import Queue as queue
 import re
 import sys
-from threading import Event, Thread
 
 import alsaaudio as alsa
 
-from spotifyconnect import Sink
-
-from sc_console.player_exceptions import BufferFull, PlayerError
+from sc_console.player import Player, PlayerError
 
 
 RATE = 44100
 CHANNELS = 2
 PERIODSIZE = 44100 / 40  # 0.025s
-SAMPLESIZE = 2  # 16 bit integer
 MAXPERIODS = int(0.5 * RATE / PERIODSIZE)  # 0.5s Buffer
 
-pending_data = str()
 
-
-class AlsaSink(Sink):
+class AlsaSink(Player):
 
     def __init__(self, device='default', rate=RATE, channels=CHANNELS,
                  periodsize=PERIODSIZE, buffer_length=MAXPERIODS):
@@ -34,33 +22,7 @@ class AlsaSink(Sink):
         self.channels = channels
         self.periodsize = periodsize
 
-        self._mixer = None
-
-        self.queue = queue.Queue(maxsize=buffer_length)
-        self.t = Thread()
-        self.t.name = "AlsaSinkLoop"
-
-        self.on()
-
-    def _on_music_delivery(self, audio_format, samples,
-                           num_samples, pending, session):
-        global pending_data
-
-        buf = pending_data + samples
-
-        try:
-            total = 0
-            while len(buf) >= PERIODSIZE * CHANNELS * SAMPLESIZE:
-                self.write(buf[:PERIODSIZE * CHANNELS * SAMPLESIZE])
-                buf = buf[PERIODSIZE * CHANNELS * SAMPLESIZE:]
-                total += PERIODSIZE * CHANNELS
-
-            pending_data = buf
-            return num_samples
-        except BufferFull:
-            return total
-        finally:
-            pending[0] = self.buffer_length() * PERIODSIZE * CHANNELS
+        super(AlsaSink, self).__init__(buffer_length)
 
     def mixer_load(self, mixer="", volmin=0, volmax=100):
         # List cardindex for all devices
@@ -104,12 +66,6 @@ class AlsaSink(Sink):
         self._mixer.close()
         self._mixer = None
 
-    def mixer_loaded(self):
-        if self._mixer is not None:
-            return True
-        else:
-            return False
-
     def acquire(self):
         try:
             if hasattr(alsa, 'pcms'):  # pyalsaaudio >= 0.8
@@ -129,83 +85,21 @@ class AlsaSink(Sink):
         except alsa.ALSAAudioError as error:
             raise PlayerError("PlayerError: {}".format(error))
 
-    def _close(self):
-        self.release()
-
     def release(self):
         self._device.close()
         self._device = None
 
-    def acquired(self):
-        if self._device is not None:
-            return True
-        else:
-            return False
+    def _writedata(self, data):
+        self._device.write(data)
 
-    def playback_thread(self, q, e):
-        while not e.is_set():
-            data = q.get()
-            if data:
-                self._device.write(data)
-            q.task_done()
+    def _getvolume(self):
+        return self._mixer.getvolume()[0]
 
-    def play(self):
-        self.t_stop = Event()
-        self.t = Thread(
-            args=(self.queue, self.t_stop), target=self.playback_thread)
-        self.t.daemon = True
-        self.t.start()
+    def _setvolume(self, volume):
+        self._mixer.setvolume(volume)
 
-    def pause(self):
-        self.t_stop.set()
+    def _getmute(self):
+        return self._mixer.getmute()[0]
 
-        if self.queue.empty():
-            self.queue.put(str())
-
-        self.t.join()
-
-    def playing(self):
-        if self.t.isAlive():
-            return True
-        else:
-            return False
-
-    def write(self, data):
-        try:
-            self.queue.put(data, block=False)
-        except queue.Full:
-            raise BufferFull()
-
-    def buffer_flush(self):
-        while not self.queue.empty():
-            self.queue.get()
-            self.queue.task_done()
-
-    def buffer_length(self):
-        return self.queue.qsize()
-
-    def volrange_set(self, volmin, volmax):
-        self.volmin = volmin
-        self.volmax = volmax
-
-    def volume_get(self):
-        mixer_volume = self._mixer.getvolume()[0]
-
-        if mixer_volume > self.volmax:
-            mixer_volume = self.volmax
-        elif mixer_volume < self.volmin:
-            mixer_volume = self.volmin
-
-        volume = int(round((mixer_volume - self.volmin) /
-                           float(self.volmax - self.volmin) * 100))
-        return volume
-
-    def volume_set(self, volume):
-        if volume == 0:
-            self._mixer.setmute(1)
-        else:
-            if self._mixer.getmute()[0] == 1:
-                self._mixer.setmute(0)
-        mixer_volume = int(round((self.volmax - self.volmin) *
-                                 volume / 100.0 + self.volmin))
-        self._mixer.setvolume(mixer_volume)
+    def _setmute(self, value):
+        self._mixer.setmute(value)

@@ -4,6 +4,7 @@ import pytest
 
 import spotifyconnect
 
+import sc_console.player
 import sc_console.alsa_sink
 
 from tests import mock
@@ -47,6 +48,10 @@ def test_acquire_device(alsasink, libalsa, device):
     device.setchannels.assert_called_with(sc_console.alsa_sink.CHANNELS)
     device.setperiodsize.assert_called_with(sc_console.alsa_sink.PERIODSIZE)
 
+def test_acquire_device_raise_error(alsasink, libalsa):
+    libalsa.PCM.side_effect = alsaaudio.ALSAAudioError('error')
+    with pytest.raises(sc_console.player.PlayerError):
+        alsasink.acquire()
 
 def test_music_delivery_creates_device_with_alsaaudio_0_7(alsasink, libalsa):
     del libalsa.pcms  # Remove pyalsaudio 0.8 version marker
@@ -61,11 +66,16 @@ def test_music_delivery_creates_device_with_alsaaudio_0_7(alsasink, libalsa):
     (mock.Mock(), True),
     (None, False)
 ])
-def test_aquired_device_property_true(alsasink, dev, expected):
+def test_acquired_device(alsasink, dev, expected):
     alsasink._device = dev
 
     assert alsasink.acquired() == expected
 
+def test_writedata_to_device(alsasink):
+    device_mock = mock.Mock()
+    alsasink._device = device_mock
+    alsasink._writedata('abcd')
+    device_mock.write.assert_called_once_with('abcd')
 
 @pytest.mark.parametrize("format,expected", [
     ('little', alsaaudio.PCM_FORMAT_S16_LE),
@@ -134,6 +144,23 @@ def test_mixer_load(
     assert alsasink.volmin == volmin
     assert alsasink.volmax == volmax
 
+def test_mixer_list_raises_errors(alsasink, libalsa):
+    libalsa.mixers.side_effect = alsaaudio.ALSAAudioError('error')
+
+    with pytest.raises(sc_console.player.PlayerError):
+        alsasink.mixer_load()
+
+def test_mixer_load_raises_if_no_mixers(alsasink, libalsa):
+    libalsa.mixers.return_value = []
+
+    with pytest.raises(sc_console.player.PlayerError):
+        alsasink.mixer_load()
+
+def test_mixer_load_raises_errors(alsasink, libalsa):
+    libalsa.Mixer.side_effect = alsaaudio.ALSAAudioError('error')
+
+    with pytest.raises(sc_console.player.PlayerError):
+        alsasink.mixer_load()
 
 def test_mixer_unload(alsasink, mixer):
     alsasink._mixer = mixer
@@ -141,7 +168,6 @@ def test_mixer_unload(alsasink, mixer):
 
     mixer.close.assert_called_once_with()
     alsasink._mixer = None
-
 
 @pytest.mark.parametrize("mixer, expected", [
     (mock.Mock(), True),
@@ -160,7 +186,7 @@ def test_playing(alsasink, expected):
     alsasink.t.isAlive = mock.Mock(return_value=expected)
 
     assert alsasink.playing() == expected
-
+        
 
 def test_volrange_set(alsasink):
     alsasink.volrange_set(10, 76)

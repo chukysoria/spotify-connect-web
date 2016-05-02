@@ -164,7 +164,14 @@ def alsasink(sp_session, libalsa, device, mixer):
     libalsa.Mixer.return_value = mixer
     libalsa.PCM_FORMAT_S16_LE = alsaaudio.PCM_FORMAT_S16_LE
     libalsa.PCM_FORMAT_S16_BE = alsaaudio.PCM_FORMAT_S16_BE
+    libalsa.ALSAAudioError = alsaaudio.ALSAAudioError
     sink = sc_console.alsa_sink.AlsaSink()
     sink.mixer_load()
 
     return sink
+
+@pytest.fixture
+def player(sp_session):
+    player = sc_console.player.Player(buffer_length=50)
+
+    return player

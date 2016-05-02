@@ -11,7 +11,7 @@ import six
 import spotifyconnect
 
 from sc_console.alsa_sink import AlsaSink
-from sc_console.player_exceptions import PlayerError
+from sc_console.player import PlayerError
 from sc_console.snapcast_sink import SnapcastSink
 
 __all__ = [
