@@ -2,10 +2,11 @@ import os
 
 import pytest
 
-from spotifyconnect import PlaybackNotify
+from spotifyconnect import ConnectionState, PlaybackNotify
 
 import sc_console
 from sc_console.connect import PlaybackSession
+from sc_console.player import PlayerError
 
 from tests import mock
 
@@ -119,6 +120,12 @@ def test_spotify_key_missing():
         sc_console.Connect()
 
 
+def test_connection_notify(connect, capsys):
+    connect.connection_notify(ConnectionState.LoggedIn, connect.session)
+    out, err = capsys.readouterr()
+    assert out == 'LoggedIn\n'
+
+
 def test_connection_new_credentials(connect, capsys):
     connect.connection_new_credentials('longblob', connect.session)
     out, err = capsys.readouterr()
@@ -151,6 +158,35 @@ def test_playback_notify(connect, capsys, notify, expected):
     connect.playback_notify(notify, connect.session)
     out, err = capsys.readouterr()
     assert out == (expected + '\n')
+
+
+@pytest.mark.parametrize('acquired', [
+    True,
+    False])
+def test_playback_notify_Play(connect, acquired, capsys):
+    connect.playback_session.active = True
+    connect.audio_player.acquired.return_value = acquired
+    connect.playback_notify(PlaybackNotify.Play, connect.session)
+    expected = 'kSpPlaybackNotifyPlay\n'
+    if not acquired:
+        connect.audio_player.acquire.assert_called_once_with()
+        expected += "DeviceAcquired\n"
+    connect.audio_player.play.assert_called_once_with()
+    out, err = capsys.readouterr()
+    assert out == expected
+
+
+def test_playback_notify_Play_error(connect, capsys):
+    connect.playback_session.active = True
+    connect.audio_player.acquired.return_value = False
+    connect.audio_player.acquire.side_effect = PlayerError("error")
+    connect.playback_notify(PlaybackNotify.Play, connect.session)
+    expected = 'kSpPlaybackNotifyPlay\n'
+    connect.audio_player.acquire.assert_called_once_with()
+    expected += "error\n"
+    connect.session.player.pause.assert_called_once_with()
+    out, err = capsys.readouterr()
+    assert out == expected
 
 
 def test_playback_notify_BecameInactive(connect, capsys):
