@@ -1,75 +1,32 @@
-#!/usr/bin/env python
-
-# First run the command
-# avahi-publish-service TestConnect _spotify-connect._tcp 4000
-# VERSION=1.0 CPath=/login/_zeroconf
-#
-# TODO: Add error checking
-import argparse
 import os
-import re
 from time import sleep
 
 from flask import (Flask, flash, jsonify, redirect,
                    render_template, request, url_for)
 from flask_bootstrap import Bootstrap
 
-from flask_cors import CORS
-
 import spotifyconnect
 
-from sc_console import Connect
-
-web_arg_parser = argparse.ArgumentParser(add_help=False)
-
-# Not a tuple, evaluates the same as "" + ""
-cors_help = (
-    "enable CORS support for this host (for the web api). "
-    "Must be in the format <protocol>://<hostname>:<port>. "
-    "Port can be excluded if its 80 (http) or 443 (https). "
-    "Can be specified multiple times"
-)
-
-
-def validate_cors_host(host):
-    host_regex = re.compile(
-        r'^(http|https)://[a-zA-Z0-9][a-zA-Z0-9-.]+(:[0-9]{1,5})?$')
-    result = re.match(host_regex, host)
-    if result is None:
-        raise argparse.ArgumentTypeError(
-            '%s is not in the format <protocol>://<hostname>:<port>. \
-            Protocol must be http or https' % host)
-    return host
-
-web_arg_parser.add_argument(
-    '--cors', help=cors_help, action='append', type=validate_cors_host)
-args = web_arg_parser.parse_known_args()[0]
-
-app = Flask(__name__)
+app = Flask('SpotifyConnectWeb')
 Bootstrap(app)
-# Add CORS headers to API requests for specified hosts
-CORS(app, resources={r"/api/*": {"origins": args.cors}})
 
 # Serve bootstrap files locally instead of from a CDN
 app.config['BOOTSTRAP_SERVE_LOCAL'] = True
 app.secret_key = os.urandom(24)
 
+
+def get_connect_app():
+    return app.config['CONNECT_APP']
+
+# Error notification
 # Used by the error callback to determine login status
 invalid_login = False
-
-connect_app = Connect(web_arg_parser)
 
 
 def error_notification(error_type, session):
     global invalid_login
     if error_type == spotifyconnect.ErrorType.LoginBadCredentials:
         invalid_login = True
-
-connect_app.session.connection.on(
-    spotifyconnect.ConnectionEvent.ERROR_NOTIFICATION, error_notification)
-
-if os.environ.get('DEBUG') or connect_app.args.debug:
-    app.debug = True
 
 # #Routes
 
@@ -87,44 +44,44 @@ def index():
 
 @app.route('/api/playback/play')
 def playback_play():
-    connect_app.session.player.play()
+    get_connect_app().session.player.play()
     return '', 204
 
 
 @app.route('/api/playback/pause')
 def playback_pause():
-    connect_app.session.player.pause()
+    get_connect_app().session.player.pause()
     return '', 204
 
 
 @app.route('/api/playback/prev')
 def playback_prev():
-    connect_app.session.player.skip_to_prev()
+    get_connect_app().session.player.skip_to_prev()
     return '', 204
 
 
 @app.route('/api/playback/next')
 def playback_next():
-    connect_app.session.player.skip_to_next()
+    get_connect_app().session.player.skip_to_next()
     return '', 204
 
 
 @app.route('/api/playback/shuffle')
 def playback_shuffle():
-    connect_app.session.player.enable_shuffle()
+    get_connect_app().session.player.enable_shuffle()
     return '', 204
 
 
 @app.route('/api/playback/repeat')
 def playback_repeat():
-    connect_app.session.player.enable_repeat()
+    get_connect_app().session.player.enable_repeat()
     return '', 204
 
 
 @app.route('/api/playback/volume', methods=['GET'])
 def playback_volume_get():
     return jsonify({
-        'volume': connect_app.session.player.volume
+        'volume': get_connect_app().session.player.volume
     })
 
 
@@ -136,7 +93,7 @@ def playback_volume_set():
         return jsonify({
             'error': 'value must be set'
         }), 400
-    connect_app.session.player.volume = int(volume)
+    get_connect_app().session.player.volume = int(volume)
     return '', 204
 
 # Info routes
@@ -145,15 +102,18 @@ def playback_volume_set():
 @app.route('/api/info/metadata')
 def info_metadata():
     try:
-        track = connect_app.session.player.current_track
+        track = get_connect_app().session.player.current_track
         res = track.__dict__
-        res['volume'] = connect_app.session.player.volume
+        res['_sp_metadata'] = ''
+        res['volume'] = get_connect_app().session.player.volume
         res['cover_url_small'] = track.get_image_url(
             spotifyconnect.ImageSize.Normal)
         return jsonify(res)
     except spotifyconnect.Error:
         res = dict()
         res['track_name'] = 'Not playing'
+        res['album_name'] = ''
+        res['artist_name'] = ''
     finally:
         return jsonify(res)
 
@@ -161,11 +121,12 @@ def info_metadata():
 @app.route('/api/info/status')
 def info_status():
     return jsonify({
-        'active': bool(connect_app.session.player.active_device),
-        'playing': bool(connect_app.session.player.playing),
-        'shuffle': bool(connect_app.session.player.shuffled),
-        'repeat': bool(connect_app.session.player.repeated),
-        'logged_in': bool(connect_app.session.connection.connection_state)
+        'active': bool(get_connect_app().session.player.active_device),
+        'playing': bool(get_connect_app().session.player.playing),
+        'shuffle': bool(get_connect_app().session.player.shuffled),
+        'repeat': bool(get_connect_app().session.player.repeated),
+        'logged_in': not bool(
+            get_connect_app().session.connection.connection_state)
     })
 
 
@@ -184,7 +145,7 @@ def info_display_name_set():
         return jsonify({
             'error': 'displayName must be set'
         }), 400
-    connect_app.session.set_remote_name(display_name)
+    get_connect_app().session.set_remote_name(display_name)
     return '', 204
 
 # Login routes
@@ -192,7 +153,7 @@ def info_display_name_set():
 
 @app.route('/login/logout')
 def login_logout():
-    connect_app.session.connection.logout()
+    get_connect_app().session.connection.logout()
     return redirect(url_for('index'))
 
 
@@ -207,7 +168,7 @@ def login_password():
         flash('Username or password not specified', 'danger')
     else:
         flash('Waiting for spotify', 'info')
-        connect_app.session.connection.login(username, password=password)
+        get_connect_app().session.connection.login(username, password=password)
         sleep
 
     return redirect(url_for('index'))
@@ -222,7 +183,7 @@ def check_login():
 
     if invalid_login:
         res['finished'] = True
-    elif bool(connect_app.session.connection.connection_state):
+    elif bool(get_connect_app().session.connection.connection_state):
         res['finished'] = True
         res['success'] = True
 
@@ -249,19 +210,19 @@ def login_zeroconf():
 
 
 def get_info():
-    zeroconf_vars = connect_app.session.get_zeroconf_vars()
+    zeroconf_vars = get_connect_app().session.get_zeroconf_vars()
 
     return jsonify({
         'status': 101,
         'spotifyError': 0,
         'activeUser': zeroconf_vars.active_user,
-        'brandDisplayName': connect_app.config.brand_name,
+        'brandDisplayName': get_connect_app().config.brand_name,
         'accountReq': zeroconf_vars.account_req,
         'deviceID': zeroconf_vars.device_id,
         'publicKey': zeroconf_vars.public_key,
         'version': '2.0.1',
         'deviceType': zeroconf_vars.device_type,
-        'modelDisplayName': connect_app.config.model_name,
+        'modelDisplayName': get_connect_app().config.model_name,
         # Status codes are ERROR-OK (not actually an error),
         # ERROR-MISSING-ACTION, ERROR-INVALID-ACTION, ERROR-SPOTIFY-ERROR,
         # ERROR-INVALID-ARGUMENTS, ERROR-UNKNOWN, and ERROR_LOG_FILE
@@ -277,20 +238,11 @@ def add_user():
     blob = str(args.get('blob'))
     clientKey = str(args.get('clientKey'))
 
-    connect_app.session.connection.login(username, zeroconf=(blob, clientKey))
+    get_connect_app().session.connection.login(
+        username, zeroconf=(blob, clientKey))
 
     return jsonify({
         'status': 101,
         'spotifyError': 0,
         'statusString': 'ERROR-OK'
     })
-
-
-# Only run if script is run directly and not by an import
-if __name__ == "__main__":
-    # Can be run on any port as long as it matches the one used in
-    # avahi-publish-service
-    app.run('0.0.0.0', port=4000, use_reloader=False, debug=True)
-
-# TODO: Add signal catcher
-connect_app.session.free_session()

@@ -43,7 +43,8 @@ setup(
         'six >= 1.10.0'],
     entry_points={
         'console_scripts': [
-            'spotifyconnect = sc_console.__main__:main'
+            'spotifyconnect = sc_console.__main__:main',
+            'spotifyconnect-web = sc_console.__main__:main_web'
         ]
     },
     classifiers=[

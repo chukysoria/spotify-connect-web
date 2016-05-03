@@ -76,3 +76,29 @@ class CommandLineParser():
                                     type=int, default=100)
 
         return arg_parser
+
+    def create_web_parser(self):
+        arg_parser = argparse.ArgumentParser(add_help=False)
+
+        cors_help = (
+            "enable CORS support for this host (for the web api). "
+            "Must be in the format <protocol>://<hostname>:<port>. "
+            "Port can be excluded if its 80 (http) or 443 (https). "
+            "Can be specified multiple times"
+        )
+
+
+        def validate_cors_host(host):
+            host_regex = re.compile(
+                r'^(http|https)://[a-zA-Z0-9][a-zA-Z0-9-.]+(:[0-9]{1,5})?$')
+            result = re.match(host_regex, host)
+            if result is None:
+                raise argparse.ArgumentTypeError(
+                    '%s is not in the format <protocol>://<hostname>:<port>. \
+                    Protocol must be http or https' % host)
+            return host
+
+        arg_parser.add_argument(
+            '--cors', help=cors_help, action='append', type=validate_cors_host)
+
+        return self.createparser(arg_parser)

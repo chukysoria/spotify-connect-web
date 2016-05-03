@@ -1,12 +1,10 @@
 include *.py
 include *.md
-include *.js
-include *.css
 include setup.cfg
 include LICENSE
 include MANIFEST.in
 
-include static/*
-include templates/*
+recursive-include sc_console/templates *
+recursive-include sc_console/static *
 
 global-exclude __pycache__/*

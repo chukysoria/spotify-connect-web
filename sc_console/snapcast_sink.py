@@ -49,3 +49,11 @@ class SnapcastSink(Player):
     def _setvolume(self, volume):
         # TODO:Implement mixer
         pass
+
+    def _getmute(self):
+        # TODO:Implement mixer
+        return False
+
+    def _setmute(self, value):
+        # TODO:Implement mixer
+        pass
