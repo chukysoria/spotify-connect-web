@@ -22,6 +22,7 @@ def main():
     while True:
         sleep(5)
 
+
 def main_web():
     parser_classs = sc_console.CommandLineParser()
     parser = parser_classs.create_web_parser()

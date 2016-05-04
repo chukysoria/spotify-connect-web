@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 
 __all__ = [
     'CommandLineParser'
@@ -86,7 +87,6 @@ class CommandLineParser():
             "Port can be excluded if its 80 (http) or 443 (https). "
             "Can be specified multiple times"
         )
-
 
         def validate_cors_host(host):
             host_regex = re.compile(
