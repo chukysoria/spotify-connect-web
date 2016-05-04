@@ -164,7 +164,7 @@ def test_playback_notify(connect, capsys, notify, expected):
     True,
     False])
 def test_playback_notify_Play(connect, acquired, capsys):
-    connect.playback_session.active = True
+    connect.playback_session._active = True
     connect.audio_player.acquired.return_value = acquired
     connect.playback_notify(PlaybackNotify.Play, connect.session)
     expected = 'kSpPlaybackNotifyPlay\n'
@@ -177,7 +177,7 @@ def test_playback_notify_Play(connect, acquired, capsys):
 
 
 def test_playback_notify_Play_error(connect, capsys):
-    connect.playback_session.active = True
+    connect.playback_session._active = True
     connect.audio_player.acquired.return_value = False
     connect.audio_player.acquire.side_effect = PlayerError("error")
     connect.playback_notify(PlaybackNotify.Play, connect.session)
