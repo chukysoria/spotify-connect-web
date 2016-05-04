@@ -22,6 +22,8 @@ def sp_session(sp_zeroconf):
 @pytest.fixture
 def sp_config():
     config = mock.Mock(spec=spotifyconnect.Config)
+    config.brand_name = "Brand Name"
+    config.model_name = "Model Name"
     return config
 
 
@@ -183,3 +185,20 @@ def player(sp_session):
     player._setmute = mock.Mock()
 
     return player
+
+
+@pytest.fixture
+def mock_connect(sp_session, sp_config):
+    mock_connect = mock.Mock(spec=sc_console.connect)
+    mock_connect.session = sp_session
+    mock_connect.config = sp_config
+    return mock_connect
+
+
+@pytest.fixture
+def webapp(mock_connect):
+    flask_app = sc_console.app.app
+    flask_app.config['CONNECT_APP'] = mock_connect
+    client = flask_app.test_client()
+
+    return client
