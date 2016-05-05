@@ -132,20 +132,21 @@ def info_status():
 
 @app.route('/api/info/display_name', methods=['GET'])
 def info_display_name_get():
+    zeroconf_vars = get_connect_app().session.get_zeroconf_vars()
     return jsonify({
-        'remoteName': get_zeroconf_vars()['remote_name']
+        'remoteName': zeroconf_vars.remote_name
     })
 
 
 @app.route('/api/info/display_name',
            methods=['POST'], endpoint='display_name-post')
 def info_display_name_set():
-    display_name = str(request.form.get('displayName'))
-    if not display_name:
+    display_name = request.form.get('displayName')
+    if display_name is None:
         return jsonify({
             'error': 'displayName must be set'
         }), 400
-    get_connect_app().session.set_remote_name(display_name)
+    get_connect_app().session.set_remote_name(str(display_name))
     return '', 204
 
 # Login routes
@@ -161,14 +162,15 @@ def login_logout():
 def login_password():
     global invalid_login
     invalid_login = False
-    username = str(request.form.get('username'))
-    password = str(request.form.get('password'))
+    username = request.form.get('username')
+    password = request.form.get('password')
 
     if not username or not password:
         flash('Username or password not specified', 'danger')
     else:
         flash('Waiting for spotify', 'info')
-        get_connect_app().session.connection.login(username, password=password)
+        get_connect_app().session.connection.login(
+            str(username), password=str(password))
         sleep
 
     return redirect(url_for('index'))
@@ -183,7 +185,7 @@ def check_login():
 
     if invalid_login:
         res['finished'] = True
-    elif bool(get_connect_app().session.connection.connection_state):
+    elif not bool(get_connect_app().session.connection.connection_state):
         res['finished'] = True
         res['success'] = True
 

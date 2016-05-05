@@ -2,6 +2,8 @@ import argparse
 import os
 import re
 
+from six.moves import range
+
 __all__ = [
     'CommandLineParser'
 ]
@@ -56,25 +58,14 @@ class CommandLineParser():
         arg_parser.add_argument('--mixer', '-m',
                                 help='alsa mixer name for volume control',
                                 default='')
-        try:
-            arg_parser.add_argument('--volmin', '-v',
-                                    help='minimum mixer volume (percentage)',
-                                    metavar='{0-99}', choices=xrange(0, 100),
-                                    type=int, default=0)
-            arg_parser.add_argument('--volmax', '-V',
-                                    help='maximum mixer volume (percentage)',
-                                    metavar='{1-100}', choices=xrange(1, 101),
-                                    type=int, default=100)
-        except NameError:
-            # Python 3
-            arg_parser.add_argument('--volmin', '-v',
-                                    help='minimum mixer volume (percentage)',
-                                    metavar='{0-99}', choices=range(0, 100),
-                                    type=int, default=0)
-            arg_parser.add_argument('--volmax', '-V',
-                                    help='maximum mixer volume (percentage)',
-                                    metavar='{1-100}', choices=range(1, 101),
-                                    type=int, default=100)
+        arg_parser.add_argument('--volmin', '-v',
+                                help='minimum mixer volume (percentage)',
+                                metavar='{0-99}', choices=range(0, 100),
+                                type=int, default=0)
+        arg_parser.add_argument('--volmax', '-V',
+                                help='maximum mixer volume (percentage)',
+                                metavar='{1-100}', choices=range(1, 101),
+                                type=int, default=100)
 
         return arg_parser
 

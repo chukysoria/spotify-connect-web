@@ -1,29 +1,52 @@
+from threading import Event
+
 import pytest
+
+from six.moves import range
 
 import spotifyconnect
 
+from sc_console.player import BufferFull
 from tests import mock
 
 
 def test_defaults(player):
-    assert player.t.name == 'PlayerLoop'
     assert player._device is None
     assert player._mixer is None
 
 
-def test_music_delivery_writes_frames_to_stream(player):
-    player._device = mock.Mock()
+def test_music_delivery_writes_frames_to_stream(player, sp_session):
     player.write = mock.Mock()
+    player.buffer_length = mock.Mock(return_value=1)
     audio_format = mock.Mock()
-    audio_format.sample_type = spotifyconnect.SampleType.S16NativeEndian
-    pending = [0]
-    frames = 'abcd'
+    samples = [0]
+    samples = 'a' * 4412
+    num_samples = 2206
+    pending = spotifyconnect.ffi.new('int *')
 
-    num_consumed_frames = player._on_music_delivery(
-        audio_format, frames,
-        mock.sentinel.num_samples, pending, mock.sentinel.session)
+    num_consumed_samples = player._on_music_delivery(
+        audio_format, samples, num_samples, pending, sp_session)
 
-    assert num_consumed_frames == mock.sentinel.num_samples
+    assert num_consumed_samples == num_samples
+    assert pending[0] == 2204
+    player.write.assert_called_once_with('a' * 4408)
+
+
+def test_music_delivery_writes_frames_to_stream_full(player, sp_session):
+    player.write = mock.Mock(side_effect=BufferFull)
+    player.buffer_length = mock.Mock(return_value=0)
+    audio_format = mock.Mock()
+    samples = [0]
+    samples = 'a' * 4412
+    num_samples = 2206
+    pending = spotifyconnect.ffi.new('int *')
+
+    num_consumed_samples = player._on_music_delivery(
+        audio_format, samples, num_samples, pending, sp_session)
+
+    assert num_consumed_samples == 0
+    assert pending[0] == 0
+    player.write.assert_called_once_with('a' * 4408)
 
 
 @pytest.mark.parametrize("mixer, expected", [
@@ -51,6 +74,27 @@ def test_off_closes_audio_device(player):
     player.release.assert_called_with()
 
 
+def test_playback_thread(player):
+    e = Event()
+    player.queue.put('a', block=False)
+    with pytest.raises(NotImplementedError):
+        player.playback_thread(player.queue, e)
+
+
+def test_play(player):
+    player.play()
+
+    assert player.t.daemon
+    assert player.t.isAlive()
+
+
+def test_pause(player):
+    player.play()
+    player.pause()
+
+    assert not player.t.isAlive()
+
+
 @pytest.mark.parametrize("expected", [
     True,
     False
@@ -61,11 +105,37 @@ def test_playing(player, expected):
     assert player.playing() == expected
 
 
-def test_volrange_set(alsasink):
-    alsasink.volrange_set(10, 76)
+def test_write(player):
+    player.write('abcd')
+    data = player.queue.get()
 
-    assert alsasink.volmin == 10
-    assert alsasink.volmax == 76
+    assert data == 'abcd'
+
+
+def test_write_full(player):
+    with pytest.raises(BufferFull):
+        for i in range(51):
+            player.write(i)
+
+
+def test_buffer_flush(player):
+    player.queue.put('a', block=False)
+    player.buffer_flush()
+
+    player.queue.qsize() == 0
+
+
+def test_buffer_length(player):
+    player.queue.put('a', block=False)
+
+    player.buffer_length() == 1
+
+
+def test_volrange_set(player):
+    player.volrange_set(10, 76)
+
+    assert player.volmin == 10
+    assert player.volmax == 76
 
 
 @pytest.mark.parametrize("device_volume, volmin, volmax, expected", [

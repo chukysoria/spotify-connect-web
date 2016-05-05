@@ -70,3 +70,13 @@ def test_getvolume(snapsink):
 
 def test_setvolume(snapsink):
     snapsink._setvolume(10)
+
+
+def test_getmute(snapsink):
+    mute = snapsink._getmute()
+
+    assert not mute
+
+
+def test_setmute(snapsink):
+    snapsink._setmute(True)

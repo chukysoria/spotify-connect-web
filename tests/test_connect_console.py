@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+import spotifyconnect
 from spotifyconnect import ConnectionState, PlaybackNotify
 
 import sc_console
@@ -117,6 +118,14 @@ def test_arguments_2(connect, snapsink, openfile, libspotify):
 def test_spotify_key_missing():
 
     with pytest.raises(IOError):
+        sc_console.Connect()
+
+
+def test_init_fails(libspotify, sp_config):
+    libspotify.Config.return_value = sp_config
+    libspotify.LibError = spotifyconnect.LibError
+    libspotify.Session.side_effect = spotifyconnect.LibError(3)
+    with pytest.raises(SystemExit):
         sc_console.Connect()
 
 

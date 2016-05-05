@@ -5,15 +5,18 @@ import pytest
 import spotifyconnect
 
 import sc_console
+from sc_console.app import app
 
 from tests import mock
 
 
 @pytest.fixture()
-def sp_session(sp_zeroconf):
+def sp_session(sp_zeroconf, sp_player):
     session = mock.Mock(spec=spotifyconnect.Session)
-    session.player.num_listeners.return_value = 0
+    session.player = sp_player
     session.get_zeroconf_vars.return_value = sp_zeroconf
+    session.connection.connection_state = (
+        spotifyconnect.ConnectionState.LoggedIn)
     spotifyconnect._session_instance = session
 
     return session
@@ -25,6 +28,38 @@ def sp_config():
     config.brand_name = "Brand Name"
     config.model_name = "Model Name"
     return config
+
+
+@pytest.fixture
+def sp_metadata():
+    metadata = mock.Mock(spotifyconnect=spotifyconnect.Metadata)
+    metadata._sp_metadata = 'something'
+    metadata.playlist_name = 'playlist_name'
+    metadata.playlist_uri = 'playlist_uri'
+    metadata.track_name = 'track_name'
+    metadata.track_uri = 'track_uri'
+    metadata.artist_name = 'artist_name'
+    metadata.artist_uri = 'artist_uri'
+    metadata.album_name = 'album_name'
+    metadata.album_uri = 'album_uri'
+    metadata.cover_uri = 'cover_uri'
+    metadata.duration = 568745
+
+    return metadata
+
+
+@pytest.fixture()
+def sp_player(sp_metadata):
+    player = mock.Mock(spec=spotifyconnect.Player)
+    player.num_listeners.return_value = 0
+    player.volume = 38
+    player.current_track = sp_metadata
+    player.active_device = True
+    player.playing = True
+    player.shuffled = True
+    player.repeated = True
+
+    return player
 
 
 @pytest.fixture
@@ -45,13 +80,11 @@ def connect(
     libspotify.PlaybackNotify = spotifyconnect.PlaybackNotify
     alsasink_class.return_value = mock_alsasink
     snaspcast_class.return_value = snapsink
-    file_data = '{}'
     try:
         file_data = getattr(request.function.credentials_file, "args")[0]
-    except AttributeError:
-        pass
-    finally:
         openfile.side_effect = mock.mock_open(read_data=file_data)
+    except AttributeError:
+        openfile.side_effect = IOError
 
     try:
         cmd_args = getattr(request.function.commandline, "args")[0]
@@ -122,7 +155,7 @@ def snapcast_os():
 
 
 @pytest.fixture
-def snapsink(sp_session):
+def snapsink():
     sink = sc_console.snapcast_sink.SnapcastSink()
 
     return sink
@@ -152,7 +185,7 @@ def libalsa():
 
 
 @pytest.fixture
-def mock_alsasink(sp_session, libalsa, device, mixer):
+def mock_alsasink(mixer):
     sink = mock.Mock(spec=sc_console.alsa_sink.AlsaSink())
 
     return sink
@@ -197,7 +230,8 @@ def mock_connect(sp_session, sp_config):
 
 @pytest.fixture
 def webapp(mock_connect):
-    flask_app = sc_console.app.app
+    flask_app = app
+    app.debug = True
     flask_app.config['CONNECT_APP'] = mock_connect
     client = flask_app.test_client()
 

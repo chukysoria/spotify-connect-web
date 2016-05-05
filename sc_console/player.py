@@ -20,7 +20,6 @@ class Player(Sink):
     def __init__(self, buffer_length):
         self.queue = queue.Queue(maxsize=buffer_length)
         self.t = Thread()
-        self.t.name = "{0}Loop".format(type(self).__name__)
 
         self.on()
 
@@ -107,7 +106,7 @@ class Player(Sink):
 
     def write(self, data):
         try:
-            self.queue.put(data, block=False)
+            self.queue.put_nowait(data)
         except queue.Full:
             raise BufferFull()
 

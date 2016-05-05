@@ -134,6 +134,9 @@ class Connect:
 
     _credentials = None
     credential_file = None
+    audio_player = None
+    session = None
+    config = None
 
     # Connection callbacks
     def connection_notify(self, notify, session):
