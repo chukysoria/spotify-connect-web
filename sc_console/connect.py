@@ -118,11 +118,17 @@ class Connect:
         self.print_zeroconf_vars(self.session.get_zeroconf_vars())
 
         if self._credentials['username'] and password:
-            self.session.connection.login(
-                self._credentials['username'], password=password)
+            try:
+                self.session.connection.login(
+                    self._credentials['username'], password=password)
+            except spotifyconnect.LibError as e:
+                print('Error when login with password: {}'.format(e.message))
         elif self._credentials['username'] and self._credentials['blob']:
-            self.session.connection.login(
-                self._credentials['username'], blob=self._credentials['blob'])
+            try:
+                self.session.connection.login(
+                    self._credentials['username'], blob=self._credentials['blob'])
+            except spotifyconnect.LibError as e:
+                print('Error when login with blob: {}'.format(e.message))
 
         self.playback_session = PlaybackSession()
 
