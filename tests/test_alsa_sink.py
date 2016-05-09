@@ -67,7 +67,7 @@ def test_release(alsasink):
 def test_writedata_to_device(alsasink):
     device_mock = mock.Mock()
     alsasink._device = device_mock
-    alsasink._writedata('abcd')
+    alsasink._write_data('abcd')
     device_mock.write.assert_called_once_with('abcd')
 
 

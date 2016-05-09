@@ -120,13 +120,15 @@ class Connect:
         if self._credentials['username'] and password:
             try:
                 self.session.connection.login(
-                    self._credentials['username'], password=password)
+                    self._credentials['username'],
+                    password=password)
             except spotifyconnect.LibError as e:
                 print('Error when login with password: {}'.format(e.message))
         elif self._credentials['username'] and self._credentials['blob']:
             try:
                 self.session.connection.login(
-                    self._credentials['username'], blob=self._credentials['blob'])
+                    self._credentials['username'],
+                    blob=self._credentials['blob'])
             except spotifyconnect.LibError as e:
                 print('Error when login with blob: {}'.format(e.message))
 

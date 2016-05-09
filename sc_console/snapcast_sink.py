@@ -39,7 +39,7 @@ class SnapcastSink(Player):
         os.close(self._device)
         self._device = None
 
-    def _writedata(self, data):
+    def _write_data(self, data):
         os.write(self._device, data)
 
     def _getvolume(self):

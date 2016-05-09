@@ -46,7 +46,7 @@ def test_release(snapsink, snapcast_os):
 def test_writedata(snapsink, snapcast_os):
     mock_pipe = mock.Mock()
     snapsink._device = mock_pipe
-    snapsink._writedata('abcd')
+    snapsink._write_data('abcd')
     snapcast_os.write.assert_called_once_with(mock_pipe, 'abcd')
 
 

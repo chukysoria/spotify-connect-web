@@ -89,7 +89,7 @@ class AlsaSink(Player):
         self._device.close()
         self._device = None
 
-    def _writedata(self, data):
+    def _write_data(self, data):
         self._device.write(data)
 
     def _getvolume(self):
