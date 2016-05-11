@@ -231,6 +231,7 @@ class Connect:
 
     def signal_handler(self, signal, frame):  # pragma: no cover
         self.event_loop.stop()
+        self.event_loop.join()
         self.session.connection.logout()
         self.session.free_session()
         sys.exit(0)
