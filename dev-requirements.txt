@@ -1,0 +1,8 @@
+mock
+pytest
+pytest-cov
+tox
+twine
+flake8
+flake8-import-order
+pypandoc

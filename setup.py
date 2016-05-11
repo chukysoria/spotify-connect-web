@@ -17,23 +17,28 @@ def get_version(filename):
     return metadata['version']
 
 
+def md_to_rst(filename):
+    try:
+        import pypandoc
+        long_description = pypandoc.convert(filename, 'rst')
+    except(IOError, ImportError):
+        long_description = read_file(filename)
+    return long_description
+
 setup(
-    name='sc-console',
-    version='0.1.0',
+    name='spotifyconnect-web',
+    version=get_version('sc_console/__init__.py'),
     url='https://github.com/chukysoria/spotify-connect-web',
     license='Apache License, Version 2.0',
     author='chukysoria',
     author_email='nomail@nomail.com',
-    description='Implementation of libspotify-connect',
-    long_description=read_file('README.md'),
+    description='Console and web client for Spotify Connect',
+    long_description=md_to_rst('README.md'),
     keywords='spotify connect library',
     packages=find_packages(exclude=['tests', 'tests.*']),
     test_suite="tests",
     zip_safe=False,
     include_package_data=True,
-    setup_requires=[
-        'pytest-runner'],
-    tests_require=['pytest'],
     install_requires=[
         'Flask >= 0.10.1',
         'Flask-Bootstrap >= 3.3.2.1',

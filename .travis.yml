@@ -5,6 +5,9 @@ language: python
 services:
 - docker
 
+cache:
+- pip
+
 env:
 - TOX_ENV=py27
 - TOX_ENV=py34
@@ -15,11 +18,13 @@ addons:
   apt:
     packages:
     - qemu-user-static
+	- pandoc
 
 before_install:
 - docker build -t chukysoria/spotify-connect-web -f Dockerfile .
 
-install: true
+install: 
+- pip install pypandoc
 
 script:
 - docker run -v $TRAVIS_BUILD_DIR:/usr/src/app -e TOX_ENV=$TOX_ENV
@@ -29,3 +34,27 @@ after_success:
 - docker run -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH
   -v $TRAVIS_BUILD_DIR:/usr/src/app chukysoria/spotify-connect-web -c
   coveralls
+
+before_deploy:
+- sudo chown -R $USER $TRAVIS_BUILD_DIR
+
+deploy:
+- provider: pypi
+  user: chukysoria
+  password:
+    secure: XBjF+/ZtAXDjlwHeeARWwRyP0Pse4qcCiK68A2WAHJOspWJqv7LhqTroXo65DDsMPbuqSB84rTzAWS5dKC5XfA9/3sZAiH7Lxq8/lOkjfzPcwV42Hb1ySyiclIh1anPDzFPy+WbBLEqw/gHKoZZSHVxNwHDx9F3GpgTdCJqigmNapzadU7vQjSHVm9lg4IrkDg2xHUn02vvDTjahOJSt6gcwS4M7EXxaZtZI40YPb2/KSj+JnQEj1S7Hzmlwom2pEqpYB8ES4pUuT+VgMKqvrNQICQm6t7yLX0i5sdNleQ2oL4wimZUPA7VwMZsPHb7J58L6BXqTVoX6pL6WK6EQD8YTMOugd72pwMmgT791R5HeHNr+RU6EzmI1WQsyBf+UbNpm8F6OrRRBPumKixSTj2k/H3Q8rLa+n/wApYyIPmk3MvHfKOGJWDlvuCZZPO7byoe/elz98ODJoPUWq+JiE3o0h8P6xZLbi9JGJkmUteefSonsrZTem/QLYssHRoBRmUOKZjuZ5h2Hx3Usk/dzYJOFT+UO8HbCDIL8Ie1KzicgVwwowThZlWtG7BxoOvkvfUT/mmNv7pFOd7vPuHfQFAEOmVP+Y4767o5ncmQBtOPz0P6xd4YD8cdsoxyXbL6EoscAogtuQ641R0IWo86r2e0cao81oBIVTjlyoLck7pY=
+  distributions: "sdist bdist_wheel"
+  on:
+    tags: true
+    condition: "$TOX_ENV = py27"
+    repo: chukysoria/spotify-connect-web
+- provider: pypi
+  server: https://testpypi.python.org/pypi
+  user: chukysoria
+  password:
+    secure: XBjF+/ZtAXDjlwHeeARWwRyP0Pse4qcCiK68A2WAHJOspWJqv7LhqTroXo65DDsMPbuqSB84rTzAWS5dKC5XfA9/3sZAiH7Lxq8/lOkjfzPcwV42Hb1ySyiclIh1anPDzFPy+WbBLEqw/gHKoZZSHVxNwHDx9F3GpgTdCJqigmNapzadU7vQjSHVm9lg4IrkDg2xHUn02vvDTjahOJSt6gcwS4M7EXxaZtZI40YPb2/KSj+JnQEj1S7Hzmlwom2pEqpYB8ES4pUuT+VgMKqvrNQICQm6t7yLX0i5sdNleQ2oL4wimZUPA7VwMZsPHb7J58L6BXqTVoX6pL6WK6EQD8YTMOugd72pwMmgT791R5HeHNr+RU6EzmI1WQsyBf+UbNpm8F6OrRRBPumKixSTj2k/H3Q8rLa+n/wApYyIPmk3MvHfKOGJWDlvuCZZPO7byoe/elz98ODJoPUWq+JiE3o0h8P6xZLbi9JGJkmUteefSonsrZTem/QLYssHRoBRmUOKZjuZ5h2Hx3Usk/dzYJOFT+UO8HbCDIL8Ie1KzicgVwwowThZlWtG7BxoOvkvfUT/mmNv7pFOd7vPuHfQFAEOmVP+Y4767o5ncmQBtOPz0P6xd4YD8cdsoxyXbL6EoscAogtuQ641R0IWo86r2e0cao81oBIVTjlyoLck7pY=
+  distributions: "sdist bdist_wheel"
+  on:
+    all_branches: true
+    condition: "$TOX_ENV = py27"
+    repo: chukysoria/spotify-connect-web
