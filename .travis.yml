@@ -43,18 +43,18 @@ deploy:
   user: chukysoria
   password:
     secure: TAlHHnijUjVSbz5Vw9z1xucBlz2eaQwHejf2vKQfeT7L6XqlGgnhnHVhwaIQBA4kyWxLtI3/jnKEeGNUW+wKxhEBKbleBraZMtaiEW9MFqkRlYa2/TSk2F2tskEyudp24fLcOnpx0ErQ1bnH3vd6Erqdilv2zrPA9QdwA9QgBG3hoXRYZvFsP97BFJlxIAzQhMOD4ykhgVBKHZQSX6ioxKO6K/Yjhb9s+OWl9Ltz7MgAyb+SdGCnDpG1QT9WXqpgQnWFZ8QcorkhQII/BIaKeh9Nx654ifruXOpoieUkRFLnnBW+OmMvIGjYgxhxIkXl45NypqvYXIh7xknLQeiOJT03FUkkK1QlOeY2iAQfj3MjCMFldksbNNitLuVm+TdiU7s7C4E/bs8NMyvpzT5VSzOTwlKqZXt/f6Kb1nVzTj+bJaM4pzyWwrxhxYr6XJ02be15C8LUDmFfiwhQRelp0nftSFwSrpNSWe1CN94bnA5Pn/B3mof40Fujldb2bQ8a69Jb3V33n/YqiKhwyF2Yh1LDV30za9PL9de8C4MT1qMvulC2j2RPY2Ne5/UbblIqB4ihXu8dKdwhyhS/A8RBvHY1zQeJGJBIA/0IJY0mxNxRJgJkZMNzQ6W3TllCjUSI8KkQRxm7XVGVw8USmLJkuMwJWufvog/78XTdsAEDh1M=
+  distributions: "sdist bdist_wheel"
   on:
     tags: true
-    condition: "$TOX_ENV = py27"
-    distributions: sdist bdist_wheel
+    condition: "$TOX_ENV = py27"    
     repo: chukysoria/spotify-connect-web
 - provider: pypi
   server: https://testpypi.python.org/pypi
   user: chukysoria
   password:
     secure: TAlHHnijUjVSbz5Vw9z1xucBlz2eaQwHejf2vKQfeT7L6XqlGgnhnHVhwaIQBA4kyWxLtI3/jnKEeGNUW+wKxhEBKbleBraZMtaiEW9MFqkRlYa2/TSk2F2tskEyudp24fLcOnpx0ErQ1bnH3vd6Erqdilv2zrPA9QdwA9QgBG3hoXRYZvFsP97BFJlxIAzQhMOD4ykhgVBKHZQSX6ioxKO6K/Yjhb9s+OWl9Ltz7MgAyb+SdGCnDpG1QT9WXqpgQnWFZ8QcorkhQII/BIaKeh9Nx654ifruXOpoieUkRFLnnBW+OmMvIGjYgxhxIkXl45NypqvYXIh7xknLQeiOJT03FUkkK1QlOeY2iAQfj3MjCMFldksbNNitLuVm+TdiU7s7C4E/bs8NMyvpzT5VSzOTwlKqZXt/f6Kb1nVzTj+bJaM4pzyWwrxhxYr6XJ02be15C8LUDmFfiwhQRelp0nftSFwSrpNSWe1CN94bnA5Pn/B3mof40Fujldb2bQ8a69Jb3V33n/YqiKhwyF2Yh1LDV30za9PL9de8C4MT1qMvulC2j2RPY2Ne5/UbblIqB4ihXu8dKdwhyhS/A8RBvHY1zQeJGJBIA/0IJY0mxNxRJgJkZMNzQ6W3TllCjUSI8KkQRxm7XVGVw8USmLJkuMwJWufvog/78XTdsAEDh1M=
+  distributions: "sdist bdist_wheel"
   on:
     all_branches: true
     condition: "$TOX_ENV = py27"
-    distributions: "sdist bdist_wheel"
     repo: chukysoria/spotify-connect-web
