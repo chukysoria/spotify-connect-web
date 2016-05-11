@@ -28,8 +28,8 @@ def test_music_delivery_writes_frames_to_stream(player, sp_session):
         audio_format, samples, num_samples, pending, sp_session)
 
     assert num_consumed_samples == num_samples
-    assert pending[0] == 2204
-    player.write.assert_called_once_with('a' * 4408)
+    assert pending[0] == 2205
+    player.write.assert_called_once_with('a' * 4410)
 
 
 def test_music_delivery_writes_frames_to_stream_full(player, sp_session):
@@ -46,7 +46,7 @@ def test_music_delivery_writes_frames_to_stream_full(player, sp_session):
 
     assert num_consumed_samples == 0
     assert pending[0] == 0
-    player.write.assert_called_once_with('a' * 4408)
+    player.write.assert_called_once_with('a' * 4410)
 
 
 @pytest.mark.parametrize("mixer, expected", [

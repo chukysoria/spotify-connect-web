@@ -1,3 +1,4 @@
+from __future__ import division
 try:
     # Python 3
     import queue
@@ -34,9 +35,10 @@ class Player(Sink):
 
         try:
             total = 0
-            while len(buf) >= PERIODSIZE * CHANNELS * SAMPLESIZE:
-                self.write(buf[:PERIODSIZE * CHANNELS * SAMPLESIZE])
-                buf = buf[PERIODSIZE * CHANNELS * SAMPLESIZE:]
+            write_size = int(PERIODSIZE * CHANNELS * SAMPLESIZE)
+            while len(buf) >= write_size:
+                self.write(buf[:write_size])
+                buf = buf[write_size:]
                 total += PERIODSIZE * CHANNELS
 
             pending_data = buf
@@ -44,7 +46,7 @@ class Player(Sink):
         except BufferFull:
             return total
         finally:
-            pending[0] = self.buffer_length() * PERIODSIZE * CHANNELS
+            pending[0] = int(self.buffer_length() * PERIODSIZE * CHANNELS)
 
     def mixer_load(self, mixer=None, volmin=0, volmax=100):
         raise NotImplementedError

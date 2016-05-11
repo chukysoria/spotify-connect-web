@@ -123,8 +123,10 @@ def test_spotify_key_missing():
 
 def test_init_fails(libspotify, sp_config):
     libspotify.Config.return_value = sp_config
+    libspotify.Error = spotifyconnect.Error
     libspotify.LibError = spotifyconnect.LibError
-    libspotify.Session.side_effect = spotifyconnect.LibError(3)
+    libspotify.Session.side_effect = spotifyconnect.Error(
+        spotifyconnect.ErrorType.InitFailed)
     with pytest.raises(SystemExit):
         sc_console.Connect()
 

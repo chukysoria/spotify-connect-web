@@ -73,8 +73,8 @@ class Connect:
 
         try:
             self.session = spotifyconnect.Session(self.config)
-        except spotifyconnect.LibError as error:
-            print("New spotify-connect session failed:", error.message)
+        except spotifyconnect.Error as e:
+            print("New spotify-connect session failed:", e)
             print("Exiting.")
             sys.exit(1)
 
@@ -122,15 +122,15 @@ class Connect:
                 self.session.connection.login(
                     self._credentials['username'],
                     password=password)
-            except spotifyconnect.LibError as e:
-                print('Error when login with password: {}'.format(e.message))
+            except spotifyconnect.Error as e:
+                print('Error when login with password: {}'.format(e))
         elif self._credentials['username'] and self._credentials['blob']:
             try:
                 self.session.connection.login(
                     self._credentials['username'],
                     blob=self._credentials['blob'])
-            except spotifyconnect.LibError as e:
-                print('Error when login with blob: {}'.format(e.message))
+            except spotifyconnect.Error as e:
+                print('Error when login with blob: {}'.format(e))
 
         self.playback_session = PlaybackSession()
 
