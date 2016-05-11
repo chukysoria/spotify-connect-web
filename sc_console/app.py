@@ -111,9 +111,7 @@ def info_metadata():
         return jsonify(res)
     except spotifyconnect.Error:
         res = dict()
-        res['track_name'] = 'Not playing'
-        res['album_name'] = ''
-        res['artist_name'] = ''
+        res['track_uri'] = ''
     finally:
         return jsonify(res)
 
