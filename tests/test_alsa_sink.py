@@ -4,23 +4,23 @@ import pytest
 
 import spotifyconnect
 
-import sc_console.alsa_sink
-import sc_console.player
+import scweb.alsa_sink
+import scweb.player
 
 from tests import mock
 
 
 def test_defaults(alsasink, sp_session):
     assert alsasink.device_name == 'default'
-    assert alsasink.rate == sc_console.alsa_sink.RATE
-    assert alsasink.channels == sc_console.alsa_sink.CHANNELS
-    assert alsasink.periodsize == sc_console.alsa_sink.PERIODSIZE
+    assert alsasink.rate == scweb.alsa_sink.RATE
+    assert alsasink.channels == scweb.alsa_sink.CHANNELS
+    assert alsasink.periodsize == scweb.alsa_sink.PERIODSIZE
     sp_session.player.num_listeners.assert_called_once_with(
         spotifyconnect.PlayerEvent.MUSIC_DELIVERY)
 
 
 def test_initialization(alsasink):
-    alsasink = sc_console.alsa_sink.AlsaSink(
+    alsasink = scweb.alsa_sink.AlsaSink(
         'other device', 100, 6, 0.43, 1348)
 
     assert alsasink.device_name == 'other device'
@@ -34,9 +34,9 @@ def test_acquire_device(alsasink, libalsa, device):
 
     # The ``device`` kwarg was added in pyalsaaudio 0.8
     libalsa.PCM.assert_called_with(libalsa.PCM_PLAYBACK, device='default')
-    device.setrate.assert_called_with(sc_console.alsa_sink.RATE)
-    device.setchannels.assert_called_with(sc_console.alsa_sink.CHANNELS)
-    device.setperiodsize.assert_called_with(sc_console.alsa_sink.PERIODSIZE)
+    device.setrate.assert_called_with(scweb.alsa_sink.RATE)
+    device.setchannels.assert_called_with(scweb.alsa_sink.CHANNELS)
+    device.setperiodsize.assert_called_with(scweb.alsa_sink.PERIODSIZE)
 
 
 def test_acquire_with_alsaaudio_0_7(alsasink, libalsa):
@@ -50,7 +50,7 @@ def test_acquire_with_alsaaudio_0_7(alsasink, libalsa):
 
 def test_acquire_device_raise_error(alsasink, libalsa):
     libalsa.PCM.side_effect = alsaaudio.ALSAAudioError('error')
-    with pytest.raises(sc_console.player.PlayerError):
+    with pytest.raises(scweb.player.PlayerError):
         alsasink.acquire()
 
 
@@ -76,7 +76,7 @@ def test_writedata_to_device(alsasink):
     ("big", alsaaudio.PCM_FORMAT_S16_BE)
 ])
 def test_sets_endian_format(alsasink, libalsa, device, format, expected):
-    with mock.patch('sc_console.alsa_sink.sys') as sys_mock:
+    with mock.patch('scweb.alsa_sink.sys') as sys_mock:
         sys_mock.byteorder = format
 
         alsasink.acquire()
@@ -127,21 +127,21 @@ def test_mixer_load(
 def test_mixer_list_raises_errors(alsasink, libalsa):
     libalsa.mixers.side_effect = alsaaudio.ALSAAudioError('error')
 
-    with pytest.raises(sc_console.player.PlayerError):
+    with pytest.raises(scweb.player.PlayerError):
         alsasink.mixer_load()
 
 
 def test_mixer_load_raises_if_no_mixers(alsasink, libalsa):
     libalsa.mixers.return_value = []
 
-    with pytest.raises(sc_console.player.PlayerError):
+    with pytest.raises(scweb.player.PlayerError):
         alsasink.mixer_load()
 
 
 def test_mixer_load_raises_errors(alsasink, libalsa):
     libalsa.Mixer.side_effect = alsaaudio.ALSAAudioError('error')
 
-    with pytest.raises(sc_console.player.PlayerError):
+    with pytest.raises(scweb.player.PlayerError):
         alsasink.mixer_load()
 
 

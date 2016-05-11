@@ -7,16 +7,16 @@ from flask_cors import CORS
 
 import spotifyconnect
 
-import sc_console
-import sc_console.app
+import scweb
+import scweb.app
 
 
 def main():
 
-    command_line = sc_console.CommandLineParser()
+    command_line = scweb.CommandLineParser()
     parser = command_line.createparser()
     parsedargs = vars(parser.parse_args())
-    sc_console.Connect(**parsedargs)
+    scweb.Connect(**parsedargs)
     zeroconfserver = spotifyconnect.AvahiZeroConfServer(4000)
     zeroconfserver.run()
     while True:
@@ -24,24 +24,24 @@ def main():
 
 
 def main_web():
-    parser_classs = sc_console.CommandLineParser()
+    parser_classs = scweb.CommandLineParser()
     parser = parser_classs.create_web_parser()
     args = parser.parse_args()
 
-    connect_app = sc_console.Connect(key=args.key,
-                                     username=args.username,
-                                     password=args.password,
-                                     name=args.name,
-                                     bitrate=args.bitrate,
-                                     credentials=args.credentials,
-                                     audiosink=args.audiosink,
-                                     device=args.device,
-                                     mixer=args.mixer,
-                                     volmin=args.volmin,
-                                     volmax=args.volmax,
-                                     debug=args.debug)
+    connect_app = scweb.Connect(key=args.key,
+                                username=args.username,
+                                password=args.password,
+                                name=args.name,
+                                bitrate=args.bitrate,
+                                credentials=args.credentials,
+                                audiosink=args.audiosink,
+                                device=args.device,
+                                mixer=args.mixer,
+                                volmin=args.volmin,
+                                volmax=args.volmax,
+                                debug=args.debug)
 
-    flask_app = sc_console.app.app
+    flask_app = scweb.app.app
     # Add CORS headers to API requests for specified hosts
     CORS(flask_app, resources={r"/api/*": {"origins": args.cors}})
 
@@ -52,7 +52,7 @@ def main_web():
 
     connect_app.session.connection.on(
         spotifyconnect.ConnectionEvent.ERROR_NOTIFICATION,
-        sc_console.app.error_notification)
+        scweb.app.error_notification)
     # Can be run on any port as long as it matches the one used in
     # avahi-publish-service
     flask_app.run('0.0.0.0', port=4000, use_reloader=False, debug=True)

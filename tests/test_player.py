@@ -6,7 +6,7 @@ from six.moves import range
 
 import spotifyconnect
 
-from sc_console.player import BufferFull
+from scweb.player import BufferFull
 from tests import mock
 
 

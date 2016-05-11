@@ -1,17 +1,17 @@
 import pytest
 
-import sc_console.snapcast_sink
+import scweb.snapcast_sink
 
 from tests import mock
 
 
 def test_defaults(snapsink):
     assert snapsink._device is None
-    assert snapsink.namedpipe == sc_console.snapcast_sink.NAMEDPIPE
+    assert snapsink.namedpipe == scweb.snapcast_sink.NAMEDPIPE
 
 
 def test_initialization(sp_session):
-    snapsink = sc_console.snapcast_sink.SnapcastSink('/false/pipe', 5000)
+    snapsink = scweb.snapcast_sink.SnapcastSink('/false/pipe', 5000)
 
     assert snapsink.namedpipe == '/false/pipe'
 
@@ -29,7 +29,7 @@ def test_acquire_device(snapsink, snapcast_os):
 def test_acquire_device_raises_error(snapsink, snapcast_os):
     snapcast_os.open.side_effect = IOError('error')
 
-    with pytest.raises(sc_console.player.PlayerError):
+    with pytest.raises(scweb.player.PlayerError):
         snapsink.acquire()
 
 

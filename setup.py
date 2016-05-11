@@ -27,14 +27,14 @@ def md_to_rst(filename):
 
 setup(
     name='spotifyconnect-web',
-    version=get_version('sc_console/__init__.py'),
+    version=get_version('scweb/__init__.py'),
     url='https://github.com/chukysoria/spotify-connect-web',
     license='Apache License, Version 2.0',
     author='chukysoria',
     author_email='nomail@nomail.com',
     description='Console and web client for Spotify Connect',
     long_description=md_to_rst('README.md'),
-    keywords='spotify connect library',
+    keywords='spotify connect player client',
     packages=find_packages(exclude=['tests', 'tests.*']),
     test_suite="tests",
     zip_safe=False,
@@ -48,21 +48,23 @@ setup(
         'six >= 1.10.0'],
     entry_points={
         'console_scripts': [
-            'spotifyconnect = sc_console.__main__:main',
-            'spotifyconnect-web = sc_console.__main__:main_web'
+            'spotifyconnect = scweb.__main__:main',
+            'spotifyconnect-web = scweb.__main__:main_web'
         ]
     },
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Environment :: Console',
+        'Framework :: Flask',
+        'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
-        'Topic :: Software Development :: Libraries',
+        'Topic :: Multimedia :: Sound/Audio :: Players',
     ],
 )

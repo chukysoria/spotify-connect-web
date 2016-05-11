@@ -1,9 +1,11 @@
+from __future__ import division
+
 import re
 import sys
 
 import alsaaudio as alsa
 
-from sc_console.player import Player, PlayerError
+from scweb.player import Player, PlayerError
 
 
 RATE = 44100

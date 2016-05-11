@@ -2,18 +2,18 @@ import os
 
 import pytest
 
-import sc_console.command
+import scweb.command
 
 
 def test_createparser():
-    cl = sc_console.command.CommandLineParser()
+    cl = scweb.command.CommandLineParser()
     parser = cl.createparser()
     args = parser.parse_args([])
 
     assert not args.debug
     key_path = os.path.join(
         os.path.dirname(
-            os.path.realpath(sc_console.command.__file__)),
+            os.path.realpath(scweb.command.__file__)),
         'spotify_appkey.key')
     assert args.key == key_path
     assert args.username is None
@@ -29,7 +29,7 @@ def test_createparser():
 
 
 def test_createwebparser():
-    cl = sc_console.command.CommandLineParser()
+    cl = scweb.command.CommandLineParser()
     parser = cl.create_web_parser()
     args = parser.parse_args([])
 
@@ -37,7 +37,7 @@ def test_createwebparser():
 
 
 def test_createwebparser_CORS():
-    cl = sc_console.command.CommandLineParser()
+    cl = scweb.command.CommandLineParser()
     parser = cl.create_web_parser()
     args = parser.parse_args(['--cors', 'http://one.direction'])
 
@@ -45,7 +45,7 @@ def test_createwebparser_CORS():
 
 
 def test_createwebparser_raise():
-    cl = sc_console.command.CommandLineParser()
+    cl = scweb.command.CommandLineParser()
     parser = cl.create_web_parser()
     with pytest.raises(SystemExit):
         parser.parse_args(['--cors', 'one.direction'])

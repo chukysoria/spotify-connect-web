@@ -5,9 +5,9 @@ import pytest
 import spotifyconnect
 from spotifyconnect import ConnectionState, PlaybackNotify
 
-import sc_console
-from sc_console.connect import PlaybackSession
-from sc_console.player import PlayerError
+import scweb
+from scweb.connect import PlaybackSession
+from scweb.player import PlayerError
 
 from tests import mock
 
@@ -24,7 +24,7 @@ def test_init_defaults(
     key_path = os.path.join(
         os.path.dirname(
             os.path.realpath(
-                sc_console.connect.__file__)),
+                scweb.connect.__file__)),
         'spotify_appkey.key')
     connect.config.load_application_key_file.assert_called_once_with(key_path)
     assert connect.config.remote_name == 'TestConnect'
@@ -118,7 +118,7 @@ def test_arguments_2(connect, snapsink, openfile, libspotify):
 def test_spotify_key_missing():
 
     with pytest.raises(IOError):
-        sc_console.Connect()
+        scweb.Connect()
 
 
 def test_init_fails(libspotify, sp_config):
@@ -128,7 +128,7 @@ def test_init_fails(libspotify, sp_config):
     libspotify.Session.side_effect = spotifyconnect.Error(
         spotifyconnect.ErrorType.InitFailed)
     with pytest.raises(SystemExit):
-        sc_console.Connect()
+        scweb.Connect()
 
 
 def test_connection_notify(connect, capsys):

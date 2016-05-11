@@ -6,7 +6,7 @@ import pytest
 
 import spotifyconnect
 
-import sc_console.app
+import scweb.app
 
 
 def test_playblack_play(webapp, sp_player):
@@ -165,7 +165,7 @@ def test_login_password_errors(webapp, sp_session):
 def test_check_login(webapp, sp_session, invalid, state, finished, success):
     sp_session.connection.connection_state = state
     if invalid:
-        sc_console.app.error_notification(
+        scweb.app.error_notification(
             spotifyconnect.ErrorType.LoginBadCredentials,
             sp_session)
 

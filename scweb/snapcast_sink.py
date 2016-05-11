@@ -1,6 +1,8 @@
+from __future__ import division
+
 import os
 
-from sc_console.player import Player, PlayerError
+from scweb.player import Player, PlayerError
 
 
 RATE = 44100

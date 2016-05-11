@@ -4,8 +4,8 @@ import pytest
 
 import spotifyconnect
 
-import sc_console
-from sc_console.app import app
+import scweb
+from scweb.app import app
 
 from tests import mock
 
@@ -91,10 +91,10 @@ def connect(
     except AttributeError:
         cmd_args = []
     finally:
-        parser = sc_console.CommandLineParser().createparser()
+        parser = scweb.CommandLineParser().createparser()
         kwargs = vars(parser.parse_args(cmd_args))
-        with mock.patch('sc_console.connect.open', openfile, create=True):
-            connect = sc_console.Connect(**kwargs)
+        with mock.patch('scweb.connect.open', openfile, create=True):
+            connect = scweb.Connect(**kwargs)
 
     return connect
 
@@ -107,7 +107,7 @@ def openfile():
 
 @pytest.yield_fixture
 def libspotify():
-    patcher = mock.patch.object(sc_console.connect, 'spotifyconnect')
+    patcher = mock.patch.object(scweb.connect, 'spotifyconnect')
     yield patcher.start()
     patcher.stop()
 
@@ -128,14 +128,14 @@ def sp_zeroconf():
 
 @pytest.yield_fixture
 def alsasink_class():
-    patcher = mock.patch.object(sc_console.connect, 'AlsaSink')
+    patcher = mock.patch.object(scweb.connect, 'AlsaSink')
     yield patcher.start()
     patcher.stop()
 
 
 @pytest.yield_fixture
 def snaspcast_class():
-    patcher = mock.patch.object(sc_console.connect, 'SnapcastSink')
+    patcher = mock.patch.object(scweb.connect, 'SnapcastSink')
     yield patcher.start()
     patcher.stop()
 
@@ -149,14 +149,14 @@ def sp_eventloop():
 
 @pytest.yield_fixture
 def snapcast_os():
-    patcher = mock.patch.object(sc_console.snapcast_sink, 'os')
+    patcher = mock.patch.object(scweb.snapcast_sink, 'os')
     yield patcher.start()
     patcher.stop()
 
 
 @pytest.fixture
 def snapsink():
-    sink = sc_console.snapcast_sink.SnapcastSink()
+    sink = scweb.snapcast_sink.SnapcastSink()
 
     return sink
 
@@ -179,14 +179,14 @@ def device():
 
 @pytest.yield_fixture()
 def libalsa():
-    patcher = mock.patch.object(sc_console.alsa_sink, 'alsa')
+    patcher = mock.patch.object(scweb.alsa_sink, 'alsa')
     yield patcher.start()
     patcher.stop()
 
 
 @pytest.fixture
 def mock_alsasink(mixer):
-    sink = mock.Mock(spec=sc_console.alsa_sink.AlsaSink())
+    sink = mock.Mock(spec=scweb.alsa_sink.AlsaSink())
 
     return sink
 
@@ -200,7 +200,7 @@ def alsasink(sp_session, libalsa, device, mixer):
     libalsa.PCM_FORMAT_S16_LE = alsaaudio.PCM_FORMAT_S16_LE
     libalsa.PCM_FORMAT_S16_BE = alsaaudio.PCM_FORMAT_S16_BE
     libalsa.ALSAAudioError = alsaaudio.ALSAAudioError
-    sink = sc_console.alsa_sink.AlsaSink()
+    sink = scweb.alsa_sink.AlsaSink()
     sink.mixer_load()
 
     return sink
@@ -208,7 +208,7 @@ def alsasink(sp_session, libalsa, device, mixer):
 
 @pytest.fixture
 def player(sp_session):
-    player = sc_console.player.Player(buffer_length=50)
+    player = scweb.player.Player(buffer_length=50)
     player.release = mock.Mock()
     player._getvolume = mock.Mock()
     player._getvolume.return_value = 38
@@ -222,7 +222,7 @@ def player(sp_session):
 
 @pytest.fixture
 def mock_connect(sp_session, sp_config):
-    mock_connect = mock.Mock(spec=sc_console.connect)
+    mock_connect = mock.Mock(spec=scweb.connect)
     mock_connect.session = sp_session
     mock_connect.config = sp_config
     return mock_connect
