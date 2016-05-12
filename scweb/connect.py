@@ -64,9 +64,9 @@ class Connect:
             self.config.load_application_key_file(key)
         except IOError as e:
             print("Error opening app key: {}.".format(e))
-            print("If you don't have one, it can be obtained \
-                   from https://developer.spotify.com/my-account/keys")
-            raise e
+            print("If you don't have one, it can be obtained "
+                  "from https://developer.spotify.com/my-account/keys")
+            sys.exit(1)
 
         self.config.device_id = self._credentials['device-id']
         self.config.remote_name = name
