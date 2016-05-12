@@ -7,7 +7,8 @@ from flask_bootstrap import Bootstrap
 
 import spotifyconnect
 
-app = Flask('SpotifyConnectWeb')
+
+app = Flask('scweb')
 Bootstrap(app)
 
 # Serve bootstrap files locally instead of from a CDN

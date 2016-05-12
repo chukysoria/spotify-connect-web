@@ -4,7 +4,7 @@ include setup.cfg
 include LICENSE
 include MANIFEST.in
 
-recursive-include templates *
-recursive-include static *
+recursive-include scweb/templates *
+recursive-include scweb/static *
 
 global-exclude __pycache__/*
