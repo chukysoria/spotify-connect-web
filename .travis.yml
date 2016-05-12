@@ -21,19 +21,16 @@ addons:
     - qemu-user-static
     - pandoc
 
-before_install:
-- docker build -t chukysoria/spotify-connect-web -f Dockerfile-test .
-
 install:
 - pip install pypandoc
 
 script:
-- docker run -v $TRAVIS_BUILD_DIR:/usr/src/app -e TOX_ENV=$TOX_ENV chukysoria/spotify-connect-web
+- docker run -v $TRAVIS_BUILD_DIR:/usr/src/app -e TOX_ENV=$TOX_ENV chukysoria/spotify-connect-web:test
   -c 'tox -e $TOX_ENV'
 
 after_success:
 - docker run -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH
-  -v $TRAVIS_BUILD_DIR:/usr/src/app chukysoria/spotify-connect-web -c coveralls
+  -v $TRAVIS_BUILD_DIR:/usr/src/app chukysoria/spotify-connect-web:test -c coveralls
 
 before_deploy:
 - sudo chown -R $USER $TRAVIS_BUILD_DIR
