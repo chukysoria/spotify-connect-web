@@ -22,7 +22,7 @@ addons:
     - pandoc
 
 before_install:
-- docker build -t chukysoria/spotify-connect-web -f Dockerfile .
+- docker build -t chukysoria/spotify-connect-web -f Dockerfile-test .
 
 install:
 - pip install pypandoc

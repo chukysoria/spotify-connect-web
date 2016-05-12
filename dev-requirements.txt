@@ -6,3 +6,9 @@ twine
 flake8
 flake8-import-order
 pypandoc
+Flask
+Flask-Bootstrap
+Flask-Cors
+pyalsaaudio
+pyspotify-connect
+six
