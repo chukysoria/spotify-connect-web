@@ -1,2 +1,7 @@
 .git
+.tox
+build
 daemons
+dist
+*.egg-info
+Dockerfile*

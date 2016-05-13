@@ -1,0 +1,22 @@
+version: '2'
+services:
+  scweb:
+    build: .
+    image: chukysoria/spotify-connect-web
+    devices:
+      - "dev/snd:/dev/snd"
+    ports:
+      - "4000:4000"
+    volumes: 
+      - /tmp/snapfifo:/tmp/snapfifo
+      - scwebdata:/usr/data
+      - ./spotify_appkey.key:/usr/data/spotify_appkey.key
+    entrypoint:
+      - spotifyconnect-web
+      - -a
+      - snapcast 
+      - -k
+      - spotify_appkey.key     
+volumes: 
+  scwebdata:
+    driver: local
