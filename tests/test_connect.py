@@ -117,7 +117,7 @@ def test_arguments_2(connect, snapsink, openfile, libspotify):
 
 def test_spotify_key_missing():
 
-    with pytest.raises(IOError):
+    with pytest.raises(SystemExit):
         scweb.Connect()
 
 
