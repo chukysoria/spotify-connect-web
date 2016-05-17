@@ -6,7 +6,7 @@ from scweb.player import Player, PlayerError
 
 
 RATE = 44100
-PERIODSIZE = 44100 / 40  # 0.025s
+PERIODSIZE = int(44100 / 4)  # 0.25s
 MAXPERIODS = int(0.5 * RATE / PERIODSIZE)  # 0.5s Buffer
 NAMEDPIPE = '/tmp/snapfifo'
 

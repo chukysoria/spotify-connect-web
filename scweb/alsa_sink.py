@@ -10,7 +10,7 @@ from scweb.player import Player, PlayerError
 
 RATE = 44100
 CHANNELS = 2
-PERIODSIZE = 44100 / 40  # 0.025s
+PERIODSIZE = int(44100 / 4)  # 0.25s
 MAXPERIODS = int(0.5 * RATE / PERIODSIZE)  # 0.5s Buffer
 
 
@@ -82,7 +82,7 @@ class AlsaSink(Player):
                 self._device.setformat(alsa.PCM_FORMAT_S16_BE)
             self._device.setchannels(self.channels)
             self._device.setrate(self.rate)
-            self._device.setperiodsize(self.periodsize)
+            self._device.setperiodsize(int(self.periodsize))
 
         except alsa.ALSAAudioError as error:
             raise PlayerError("PlayerError: {}".format(error))

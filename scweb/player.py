@@ -10,7 +10,7 @@ from threading import Event, Thread
 from spotifyconnect import Sink
 
 CHANNELS = 2
-PERIODSIZE = 44100 / 40  # 0.025s
+PERIODSIZE = int(44100 / 4)  # 0.25s
 SAMPLESIZE = 2  # 16 bit integer
 
 pending_data = str()
