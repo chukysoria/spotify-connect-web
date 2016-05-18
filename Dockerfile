@@ -1,9 +1,8 @@
 FROM chukysoria/rpi-python-testing:armv7-py27
-MAINTAINER Carlos Sánchez
+MAINTAINER Carlos Sanchez
 
 RUN [ "cross-build-start" ]
 
-ADD https://github.com/sashahilton00/spotify-connect-resources/raw/master/libs/armhf/armv7/release-esdk-1.20.0-v1.20.0-g594175d4/libspotify_embedded_shared.so /usr/lib/
 COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN  python setup.py install                                            && \
