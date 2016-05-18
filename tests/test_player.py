@@ -20,16 +20,16 @@ def test_music_delivery_writes_frames_to_stream(player, sp_session):
     player.buffer_length = mock.Mock(return_value=1)
     audio_format = mock.Mock()
     samples = [0]
-    samples = 'a' * 4412
-    num_samples = 2206
+    samples = 'a' * 44102
+    num_samples = 22052
     pending = spotifyconnect.ffi.new('int *')
 
     num_consumed_samples = player._on_music_delivery(
         audio_format, samples, num_samples, pending, sp_session)
 
     assert num_consumed_samples == num_samples
-    assert pending[0] == 2205
-    player.write.assert_called_once_with('a' * 4410)
+    assert pending[0] == 22050
+    player.write.assert_called_once_with('a' * 44100)
 
 
 def test_music_delivery_writes_frames_to_stream_full(player, sp_session):
@@ -37,8 +37,8 @@ def test_music_delivery_writes_frames_to_stream_full(player, sp_session):
     player.buffer_length = mock.Mock(return_value=0)
     audio_format = mock.Mock()
     samples = [0]
-    samples = 'a' * 4412
-    num_samples = 2206
+    samples = 'a' * 44102
+    num_samples = 22052
     pending = spotifyconnect.ffi.new('int *')
 
     num_consumed_samples = player._on_music_delivery(
@@ -46,7 +46,7 @@ def test_music_delivery_writes_frames_to_stream_full(player, sp_session):
 
     assert num_consumed_samples == 0
     assert pending[0] == 0
-    player.write.assert_called_once_with('a' * 4410)
+    player.write.assert_called_once_with('a' * 44100)
 
 
 @pytest.mark.parametrize("mixer, expected", [
