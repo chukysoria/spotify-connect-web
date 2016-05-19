@@ -1,0 +1,34 @@
+version: '2'
+services:
+  scweb:
+    extends: 
+      file: ../base.yml
+      service: scweb
+    volumes: 
+    - snapfifo:/tmp
+    depends_on:
+    - snapserver
+    command: "-a snapcast"
+  snapserver:
+    build:
+      context: .
+      dockerfile: DockerfileServerRPI
+    ports:
+    - "1704:1704"
+    - "1705:1705"
+    volumes: 
+    - snapfifo:/tmp
+  snapclient:
+    build:
+      context: .
+      dockerfile: DockerfileClientRPI
+    devices:
+    - "/dev/snd/:/dev/snd/"
+    command: "-h snapserver"
+    depends_on:
+    - snapserver
+volumes: 
+  snapfifo:
+    driver: local
+  scwebdata:
+    driver: local

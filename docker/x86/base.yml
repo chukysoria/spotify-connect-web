@@ -1,0 +1,16 @@
+version: '2'
+services:
+  scweb:
+    build:
+      context: ../../.
+    image: chukysoria/spotify-connect-web
+    ports:
+      - "4000:4000"
+    volumes: 
+      - scwebdata:/usr/data
+      - ./spotify_appkey.key:/usr/data/spotify_appkey.key
+    environment:
+      - PYTHONUNBUFFERED=0
+volumes: 
+  scwebdata:
+    driver: local

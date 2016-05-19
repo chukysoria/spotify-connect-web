@@ -1,0 +1,11 @@
+FROM resin/rpi-raspbian
+
+ADD https://github.com/badaix/snapcast/releases/download/v0.7.0/snapclient_0.7.0_armhf.deb /
+
+RUN apt-get update                                                         && \
+    dpkg -i --force-all snapclient_0.7.0_armhf.deb                         && \
+    apt-get -f install -y --no-install-recommends                          && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*         && \
+    rm snapclient_0.7.0_armhf.deb
+
+ENTRYPOINT [ "/usr/sbin/snapclient" ]

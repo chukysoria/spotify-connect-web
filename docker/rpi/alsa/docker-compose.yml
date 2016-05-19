@@ -1,0 +1,12 @@
+version: '2'
+services:
+  scweb:
+    extends: 
+      file: ..\base.yml
+      service: scweb
+    devices: 
+    - /dev/snd:/dev/snd
+    command: "-a snapcast"
+volumes: 
+  scwebdata:
+    driver: local

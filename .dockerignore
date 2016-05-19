@@ -5,3 +5,4 @@ daemons
 dist
 *.egg-info
 Dockerfile*
+docker
